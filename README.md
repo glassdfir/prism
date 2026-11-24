@@ -6,7 +6,7 @@ Paste a log, alert, command line or JSON dump and every rule colors its matches.
 
 **Good for:** Triage of long logs, spotting indicators in pasted alerts, and building a reusable set of patterns for a case.
 
-- Starter DFIR rules: suspicious tooling, URLs, IPv4, email, domains, SHA-256/SHA-1/MD5, Windows paths, registry keys, timestamps, Base64 blobs (defanged forms included)
+- Optional starter DFIR rules (Sets → Add the starter DFIR rules): suspicious tooling, URLs, IPv4, email, domains, SHA-256/SHA-1/MD5, Windows paths, registry keys, timestamps, Base64 blobs (defanged forms included)
 - Top rule wins where hits overlap; drag to reorder
 - Show only lines with hits, wrap long lines, choose how much context the hover shows
 - Render markdown with the highlights intact: links aren't clickable and show where they really go, images are never loaded, raw HTML is shown as text
@@ -21,7 +21,7 @@ Paste a log, alert, command line or JSON dump and every rule colors its matches.
 
 Links: `?sample=1` opens the sample log (`?sample=md` the sample markdown), `?src=<https URL>` loads a file (repeat it to load several), and `#rules=…` (from **Sets → Copy a link to these rules**) loads a rule set.
 
-A single self-contained page with no build step. Open `index.html` or serve the folder over HTTPS. Nothing you paste leaves your browser.
+A single self-contained page with no build step. Open `index.html` or serve the folder over HTTPS. Nothing you paste leaves your browser, and pasted text is gone when you close the tab unless you turn on **Text → Keep text between visits**.
 
 Uses the shared suite script at `/assets/suite/handoff.js` from [jon.glass](https://jon.glass) to send indicators to Tessera, timed hits to Recap and the hits table to Shifu, so cross-tool handoff only works when served from jon.glass.
 

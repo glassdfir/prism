@@ -234,6 +234,8 @@ body.dragging #viewWrap::after { content: "Drop to load"; position: absolute; in
           <button type="button" data-act="sample">Load sample log</button>
           <button type="button" data-act="sample-md">Load sample markdown</button>
           <div class="menu-sep"></div>
+          <button type="button" data-act="keep" title="Off: pasted text is gone when you close the tab. On: it's saved in this browser until you clear it."><span id="keepMark" style="display:inline-block;width:14px"></span>Keep text between visits</button>
+          <div class="menu-sep"></div>
           <button type="button" data-act="clear" class="danger">Clear text</button>
         </div>
       </div>
@@ -476,15 +478,24 @@ body.dragging #viewWrap::after { content: "Drop to load"; position: absolute; in
     computeLines();
     S.curOff = -1; S.curHit = -1; S.curSeg = -1;
     hideTip(true);
-    if (S.text.length <= MAX_SAVED_TEXT) store.set('prism.text', S.text); else store.del('prism.text');
+    persistText();
     $('empty').hidden = !!S.text || !$('editor').hidden;
     applyResults([], 0, true);
     computeViewLines(); rebuildView(null);
     view.scrollTop = 0; view.scrollLeft = 0;
     runMatch(0);
-    if (!opts.quiet && S.text.length > MAX_SAVED_TEXT) toast('This text is too big to keep between visits. Rules are still saved.');
+    if (!opts.quiet && S.keep && S.text.length > MAX_SAVED_TEXT) toast('This text is too big to keep between visits. Rules are still saved.');
   }
 
+  // Pasted text stays in this tab only, unless "Keep text between visits" is on
+  function persistText() {
+    if (S.keep && S.text && S.text.length <= MAX_SAVED_TEXT) store.set('prism.text', S.text); else store.del('prism.text');
+  }
+  function setKeep(on) {
+    S.keep = !!on; store.set('prism.keepText', S.keep);
+    $('keepMark').textContent = S.keep ? '✓' : '';
+    persistText();
+  }
   function replaceText(t, label) {
     const prev = S.text;
     setText(t);
@@ -1307,7 +1318,7 @@ onmessage = (e) => {
   }
   function renderRules() {
     $('rules').innerHTML = S.rules.length ? S.rules.map(ruleCard).join('') :
-      '<div class="muted" style="padding:16px 8px;text-align:center">No rules yet. Add one, make one from selected text, or load a set from <b>Sets</b>.</div>';
+      '<div class="muted" style="padding:16px 8px;text-align:center">No rules yet. Add one with <b>+ Rule</b>, make one from selected text, or load a saved set from <b>Sets</b>.<br><br><button class="btn small" type="button" id="addStarterBtn">Add the starter DFIR rules</button></div>';
     updateBadges();
   }
   function updateBadges() {
@@ -1353,6 +1364,7 @@ onmessage = (e) => {
     updateRuleStyles(); saveRules();
   }
   rulesEl.addEventListener('click', (e) => {
+    if (e.target.closest('#addStarterBtn')) { addStarter(); return; }
     const card = e.target.closest('.rule'); if (!card) return;
     const r = S.ruleById.get(card.dataset.id); if (!r) return;
     const sw = e.target.closest('[data-color]');
@@ -1482,13 +1494,7 @@ onmessage = (e) => {
       else if (a === 'export') exportRules();
       else if (a === 'link') copyRulesLink();
       else if (a === 'import-replace' || a === 'import-add') { $('rulesIn').dataset.mode = a; $('rulesIn').click(); }
-      else if (a === 'starter') {
-        const have = new Set(S.rules.map((r) => r.pattern + '/' + r.flags));
-        const add = STARTER.filter((r) => !have.has(r.pattern + '/' + r.flags));
-        if (!add.length) { toast('The starter rules are already here'); return; }
-        add.map(normRule).forEach((r) => { validate(r); S.rules.push(r); }); afterStructure();
-        toast(`Added ${add.length} starter rules`);
-      }
+      else if (a === 'starter') addStarter();
       else if (a === 'all-on' || a === 'all-off') { S.rules.forEach((r) => (r.on = a === 'all-on')); afterStructure(); }
       else if (a === 'new') {
         if (!confirmDiscard()) return;
@@ -1522,6 +1528,15 @@ onmessage = (e) => {
       toast(`Added ${list.length} rules from ${f.name}`);
     }
   });
+  function addStarter(why) {
+    const have = new Set(S.rules.map((r) => r.pattern + '/' + r.flags));
+    const add = STARTER.filter((r) => !have.has(r.pattern + '/' + r.flags));
+    if (!add.length) { toast('The starter rules are already here'); return; }
+    add.map(normRule).forEach((r) => { validate(r); S.rules.push(r); }); afterStructure();
+    toast(why || `Added ${add.length} starter rules`);
+  }
+  // The samples need something to highlight
+  const starterForSample = () => { if (!S.rules.length) addStarter('Added the starter DFIR rules so the sample has something to show'); };
   function uniqueSetName(n) { const s = getSets(); let x = n, i = 2; while (s[x]) x = `${n} (${i++})`; return x; }
 
   // ---------- Status ----------
@@ -1664,6 +1679,7 @@ onmessage = (e) => {
     if (q.get('sample')) {
       const md = q.get('sample') === 'md';
       if (md !== !!S.md) setMd(md, true);
+      starterForSample();
       replaceText(md ? SAMPLE_MD : SAMPLE, md ? 'Loaded the sample markdown' : 'Loaded the sample log'); return;
     }
     const srcs = q.getAll('src').slice(0, 10);
@@ -1760,8 +1776,12 @@ ${$('ruleStyles').textContent}
     closeMenus();
     if (act === 'open') $('fileIn').click();
     else if (act === 'edit') startEdit();
-    else if (act === 'sample') { if (S.md) setMd(false); replaceText(SAMPLE, 'Loaded the sample log'); }
-    else if (act === 'sample-md') { replaceText(SAMPLE_MD, 'Loaded the sample markdown'); if (!S.md) setMd(true); }
+    else if (act === 'keep') {
+      setKeep(!S.keep);
+      toast(S.keep ? 'Your text will be saved in this browser until you clear it' : 'Your text is no longer saved. It stays only while this tab is open.');
+    }
+    else if (act === 'sample') { if (S.md) setMd(false); starterForSample(); replaceText(SAMPLE, 'Loaded the sample log'); }
+    else if (act === 'sample-md') { starterForSample(); replaceText(SAMPLE_MD, 'Loaded the sample markdown'); if (!S.md) setMd(true); }
     else if (act === 'clear') { if (!S.text) return; const prev = S.text; setText(''); toast('Cleared the text', { label: 'Undo', fn: () => setText(prev) }); }
     else if (act === 'csv') exportCsv();
     else if (act === 'html') exportHtml();
@@ -1880,12 +1900,16 @@ ${$('ruleStyles').textContent}
 
     const saved = store.get('prism.rules', null);
     const cur = store.get('prism.current', {});
-    S.rules = (Array.isArray(saved) ? saved : STARTER).map(normRule);
+    S.rules = (Array.isArray(saved) ? saved : []).map(normRule);
     S.rules.forEach(validate); indexRules();
     S.set = cur.set && getSets()[cur.set] ? cur.set : null; S.setDirty = !!(S.set && cur.dirty);
     renderSetName();
     updateRuleStyles(); renderRules();
-    setText(store.get('prism.text', ''), { quiet: true });
+    S.keep = store.get('prism.keepText', false) === true;
+    $('keepMark').textContent = S.keep ? '✓' : '';
+    const kept = S.keep ? store.get('prism.text', '') : '';
+    if (!S.keep) store.del('prism.text'); // text saved by earlier versions
+    setText(kept, { quiet: true });
     rulesFromHash().then(loadFromUrl);
   }
   addEventListener('hashchange', () => { rulesFromHash(); });
