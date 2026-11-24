@@ -100,6 +100,36 @@ kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--line-2)
 .h.cur { outline: 1.5px solid var(--text); outline-offset: 1px; }
 .h.flash { animation: flash 1.1s ease-out; }
 @keyframes flash { 0%, 30% { outline: 3px solid var(--text); outline-offset: 2px; } 100% { outline: 1.5px solid var(--text); outline-offset: 1px; } }
+/* Rendered markdown */
+#md { padding: 22px 34px 60px; font: 14.5px/1.6 var(--sans); max-width: 920px; overflow-wrap: anywhere; }
+#view.md { background: var(--bg); }
+#md > :first-child { margin-top: 0; }
+#md h1, #md h2, #md h3, #md h4, #md h5, #md h6 { line-height: 1.3; margin: 1.4em 0 0.5em; }
+#md h1 { font-size: 1.8em; border-bottom: 1px solid var(--line); padding-bottom: 0.25em; }
+#md h2 { font-size: 1.4em; border-bottom: 1px solid var(--line); padding-bottom: 0.2em; }
+#md h3 { font-size: 1.18em; } #md h4 { font-size: 1em; } #md h5, #md h6 { font-size: 0.92em; color: var(--muted); }
+#md p, #md ul, #md ol, #md blockquote, #md pre, #md .md-table { margin: 0 0 0.9em; }
+#md ul, #md ol { padding-left: 1.8em; }
+#md li + li { margin-top: 0.2em; }
+#md li.task { list-style: none; margin-left: -1.4em; }
+#md li.task > input { margin: 0 0.45em 0 0; vertical-align: -1px; }
+#md blockquote { border-left: 3px solid var(--line-2); padding: 0.1em 0 0.1em 1em; color: var(--muted); margin-left: 0; }
+#md blockquote .h { color: var(--text); }
+#md hr { border: 0; border-top: 1px solid var(--line-2); margin: 1.5em 0; }
+#md code { font: 0.86em var(--mono); background: var(--raise); border: 1px solid var(--line); border-radius: 4px; padding: 0.05em 0.35em; }
+#md pre { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; overflow: auto; }
+#md pre[data-lang]::before { content: attr(data-lang); display: block; font: 600 10.5px var(--sans); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+#md pre code { background: none; border: 0; padding: 0; font: 12.5px/1.5 var(--mono); white-space: pre; }
+#md .md-table { overflow: auto; }
+#md table { border-collapse: collapse; font-size: 0.95em; }
+#md th, #md td { border: 1px solid var(--line); padding: 5px 10px; vertical-align: top; }
+#md th { background: var(--panel-2); text-align: left; }
+#md .md-link, #md .md-img { color: var(--accent); text-decoration: underline dotted; text-underline-offset: 2px; }
+#md .md-href { font: 11.5px var(--mono); color: var(--muted); margin-left: 5px; }
+#md .md-href::before { content: "→ "; }
+#md .md-img-ic { text-decoration: none; display: inline-block; margin-right: 3px; }
+#toolbar label.off { opacity: 0.4; pointer-events: none; }
+
 #editor { position: absolute; inset: 0; width: 100%; height: 100%; resize: none; border: 0; padding: 12px 14px; background: var(--bg); font: 12.5px/18px var(--mono); tab-size: 4; outline: none; white-space: pre; }
 #editBar { position: absolute; right: 18px; top: 10px; z-index: 3; display: flex; gap: 6px; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 5px 6px 5px 10px; box-shadow: var(--shadow); }
 #empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; }
@@ -202,6 +232,7 @@ body.dragging #viewWrap::after { content: "Drop to load"; position: absolute; in
           <button type="button" data-act="open">Open file…</button>
           <button type="button" data-act="edit">Edit text</button>
           <button type="button" data-act="sample">Load sample log</button>
+          <button type="button" data-act="sample-md">Load sample markdown</button>
           <div class="menu-sep"></div>
           <button type="button" data-act="clear" class="danger">Clear text</button>
         </div>
@@ -218,6 +249,7 @@ body.dragging #viewWrap::after { content: "Drop to load"; position: absolute; in
           <button type="button" data-act="to-shifu" title="The hits table, to filter and group">Hits table → Shifu</button>
         </div>
       </div>
+      <a class="btn" id="downloadApp" href="index.html" download="prism.html" title="Download Prism as a single file to use offline"><svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>Download</a>
       <button class="btn icon" type="button" id="sideBtn" title="Move the rules to the other side" aria-label="Move the rules to the other side"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" style="vertical-align:-2px"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><rect id="sideIcon" x="2.5" y="3.5" width="4" height="9" fill="currentColor"/></svg></button>
       <button class="btn icon" type="button" id="themeBtn" title="Switch light and dark" aria-label="Switch light and dark"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true" style="vertical-align:-2px"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5a6.5 6.5 0 0 1 0 13z" fill="currentColor"/></svg></button>
     </div>
@@ -226,6 +258,7 @@ body.dragging #viewWrap::after { content: "Drop to load"; position: absolute; in
   <div id="layout">
     <section id="main">
       <div id="toolbar">
+        <label title="Show the text as formatted markdown. Links are not clickable; each shows where it really goes."><input type="checkbox" id="optMd"> Render markdown</label>
         <label title="Wrap long lines"><input type="checkbox" id="optWrap"> Wrap lines</label>
         <label title="Hide lines with no hits"><input type="checkbox" id="optOnly"> Only lines with hits</label>
         <label title="How much surrounding text the hover shows">Context
@@ -246,7 +279,7 @@ body.dragging #viewWrap::after { content: "Drop to load"; position: absolute; in
         </div>
       </div>
       <div id="viewWrap">
-        <div id="view" tabindex="0"><div id="lines"></div></div>
+        <div id="view" tabindex="0"><div id="lines"></div><div id="md" hidden></div></div>
         <textarea id="editor" spellcheck="false" hidden placeholder="Type or paste text here…"></textarea>
         <div id="editBar" hidden><span class="muted small">Editing text</span><button class="btn small" type="button" id="editCancel">Cancel</button><button class="btn small primary" type="button" id="editDone">Done</button></div>
         <div id="empty" hidden>
@@ -350,6 +383,57 @@ body.dragging #viewWrap::after { content: "Drop to load"; position: absolute; in
     '2026-11-20T14:15:09.411Z host=WS-FIN-07 proc=C:\\Windows\\System32\\wevtutil.exe cmd="wevtutil cl Security"',
     '2026-11-20T14:16:00.000Z host=MAIL-01 smtp from=billing@invoices.example to=jsmith@corp.example subject="Overdue invoice 88213" attach=Invoice_88213.docm',
     '{"ts":"2026-11-20T14:16:22Z","src_ip":"198.51.100.23","dst_ip":"192.0.2.10","url":"https://login.example/oauth2/authorize?client_id=8f14e45f","ua":"Mozilla/5.0"}',
+  ].join('\n');
+
+  const SAMPLE_MD = [
+    '# Incident 2026-114: overdue invoice phish',
+    '',
+    '**Status:** contained · **Severity:** high · **Lead:** _J. Smith_',
+    '',
+    '## Summary',
+    '',
+    'On 2026-11-20 at 14:02 UTC a user on `WS-FIN-07` opened *Invoice_88213.docm*. Word started PowerShell with',
+    '`-nop -w hidden -enc`, which pulled a second stage from files-update[.]example and set a Run key for persistence.',
+    'About an hour later the attacker dumped LSASS with `rundll32.exe C:\\Windows\\System32\\comsvcs.dll, MiniDump`.',
+    '',
+    '## The email',
+    '',
+    '> Your invoice **88213** is overdue. Please [review the invoice](hxxp://files-update[.]example/dl/stage2.bin) today.',
+    '> Questions? Write to <billing@invoices.example>.',
+    '',
+    'The link text says "review the invoice". Where it really goes is shown next to it.',
+    '',
+    '## Indicators',
+    '',
+    '| Type | Value | Note |',
+    '|:-----|:------|:-----|',
+    '| Domain | `files-update[.]example` | Stage 2 host |',
+    '| IP | 203.0.113.77 | C2, port 443 |',
+    '| SHA-256 | 275a021bbfb6489e54d471899f7db9d1663fc695ec2fe2a2c4538aabf651fd0f | svch0st.exe |',
+    '| Registry | HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\Updater | Persistence |',
+    '',
+    '## Timeline',
+    '',
+    '1. **14:02** Word starts PowerShell',
+    '2. **14:02** Stage 2 downloaded to `C:\\Users\\jsmith\\AppData\\Local\\Temp\\svch0st.exe`',
+    '3. **14:03** LSASS dumped to C:\\ProgramData\\l.dmp',
+    '4. **14:15** Shadow copies deleted, Security log cleared',
+    '',
+    '## Next steps',
+    '',
+    '- [x] Isolate WS-FIN-07',
+    '- [ ] Reset jsmith\'s password and revoke sessions',
+    '- [ ] Block 203.0.113.77 and files-update.example at the proxy',
+    '- [ ] Hunt for the Run key on every finance workstation:',
+    '',
+    '```powershell',
+    'Get-ItemProperty HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run |',
+    '  Where-Object { $_.Updater -like "*svch0st*" }',
+    '```',
+    '',
+    '---',
+    '',
+    '![Process tree](https://images.example/tree.png "not loaded")',
   ].join('\n');
 
   // ---------- State ----------
@@ -600,7 +684,7 @@ onmessage = (e) => {
     return lo;
   }
   function computeViewLines() {
-    if (!$('optOnly').checked || !S.text) { S.viewLines = null; return; }
+    if (!$('optOnly').checked || S.md || !S.text) { S.viewLines = null; return; }
     const n = lineCount(), flag = new Uint8Array(n);
     for (let k = 0; k < S.segS.length; k++) {
       const a = lineOf(S.segS[k]), b = lineOf(S.segE[k] - 1);
@@ -638,8 +722,9 @@ onmessage = (e) => {
     for (let p = from; p < to; p++) { const L = lineAtPos(p); rows += Math.max(1, Math.ceil((lineEnd(L) - S.starts[L]) / cols)); }
     return rows * LH;
   }
-  function lineHtml(L, forExport) {
-    const t = S.text, ls = S.starts[L], le = lineEnd(L);
+  // The source text from a to b as HTML, with every hit wrapped in its rule's span
+  function spanHtml(from, to, forExport) {
+    const t = S.text, ls = from, le = to;
     const { segS, segE, segH, hits } = S;
     let k = segAt(ls), c = ls, out = '';
     while (k < segS.length && segS[k] < le) {
@@ -652,7 +737,10 @@ onmessage = (e) => {
       c = b; k++;
     }
     if (c < le) out += esc(t.slice(c, le));
-    return `<div class="ln"${forExport ? '' : ` data-l="${L}"`}><span class="no">${L + 1}</span><span class="tx">${out}</span></div>`;
+    return out;
+  }
+  function lineHtml(L, forExport) {
+    return `<div class="ln"${forExport ? '' : ` data-l="${L}"`}><span class="no">${L + 1}</span><span class="tx">${spanHtml(S.starts[L], lineEnd(L), forExport)}</span></div>`;
   }
   function renderBlock(el) {
     if (el._r) return;
@@ -667,6 +755,7 @@ onmessage = (e) => {
     const h = el.offsetHeight; el.innerHTML = ''; el.style.height = h + 'px'; el._r = false;
   }
   function rebuildView(anchorLine) {
+    if (S.md) { renderMd(); return; }
     if (observer) observer.disconnect();
     observer = new IntersectionObserver((entries) => {
       for (const e of entries) { if (e.isIntersecting) renderBlock(e.target); else unrenderBlock(e.target); }
@@ -685,6 +774,7 @@ onmessage = (e) => {
     if (anchorLine != null) scrollToLine(anchorLine, 'start');
   }
   function refreshView() {
+    if (S.md) { renderMd(); return; }
     if (!S.blocks.length && viewCount()) { rebuildView(null); return; }
     for (const el of S.blocks) if (el._r) { el._r = false; renderBlock(el); }
   }
@@ -706,6 +796,311 @@ onmessage = (e) => {
     return el;
   }
 
+  // ---------- Markdown ----------
+  // A small CommonMark/GFM renderer. Every visible character is a slice of the source text, so hits,
+  // hover and navigation work exactly as on the raw text. Raw HTML is shown as text, links can't be
+  // clicked (each shows where it really goes), and images are never loaded.
+  const MD_FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
+  const MD_ATX = /^ {0,3}#{1,6}(?:[ \t]|$)/;
+  const MD_HR = /^ {0,3}(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})$/;
+  const MD_BQ = /^ {0,3}>/;
+  const MD_LIST = /^( {0,3})([-*+]|\d{1,9}[.)])([ \t]+|$)/;
+  const MD_SETEXT = /^ {0,3}(?:=+|-+)[ \t]*$/;
+  const MD_PUNCT = /[!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]/;
+  let MDX = false; // rendering for the HTML export
+  const mls = (l) => S.text.slice(l[0], l[1]);
+  const mblank = (l) => /^[ \t]*$/.test(mls(l));
+  function mindent(l) {
+    const t = S.text; let w = 0, i = l[0];
+    while (i < l[1]) { const c = t[i]; if (c === ' ') w++; else if (c === '\t') w += 4 - (w % 4); else break; i++; }
+    return w;
+  }
+  function mstrip(l, n) {
+    const t = S.text; let w = 0, i = l[0];
+    while (i < l[1] && w < n) { const c = t[i]; if (c === ' ') w++; else if (c === '\t') w += 4 - (w % 4); else break; i++; }
+    return [i, l[1]];
+  }
+  function mtrim(l) {
+    const t = S.text; let a = l[0], b = l[1];
+    while (a < b && (t[a] === ' ' || t[a] === '\t')) a++;
+    while (b > a && (t[b - 1] === ' ' || t[b - 1] === '\t')) b--;
+    return [a, b];
+  }
+  const mstarts = (s) => MD_ATX.test(s) || MD_FENCE.test(s) || MD_HR.test(s) || MD_BQ.test(s) || /^ {0,3}(?:[-*+]|1[.)])[ \t]+\S/.test(s);
+
+  function mdBlocks(lines, tight) {
+    let out = '', i = 0;
+    while (i < lines.length) {
+      const l = lines[i], s = mls(l);
+      if (mblank(l)) { i++; continue; }
+      let m;
+      if (mindent(l) >= 4) {
+        const code = [];
+        while (i < lines.length && (mblank(lines[i]) || mindent(lines[i]) >= 4)) { code.push(mstrip(lines[i], 4)); i++; }
+        while (code.length && mblank(code[code.length - 1])) code.pop();
+        out += mdCode(code, ''); continue;
+      }
+      if ((m = MD_FENCE.exec(s)) && !(m[1][0] === '`' && m[2].includes('`'))) {
+        const ch = m[1][0], len = m[1].length, ind = mindent(l), info = m[2].trim().split(/\s+/)[0] || '';
+        const code = []; i++;
+        while (i < lines.length) {
+          const c = /^ {0,3}(`{3,}|~{3,})[ \t]*$/.exec(mls(lines[i]));
+          if (c && c[1][0] === ch && c[1].length >= len) { i++; break; }
+          code.push(mstrip(lines[i], ind)); i++;
+        }
+        out += mdCode(code, info); continue;
+      }
+      if (MD_ATX.test(s)) { out += mdAtx(l); i++; continue; }
+      if (MD_HR.test(s)) { out += '<hr>'; i++; continue; }
+      if (MD_BQ.test(s)) {
+        const inner = [];
+        while (i < lines.length && !mblank(lines[i])) {
+          const s2 = mls(lines[i]), q = /^ {0,3}> ?/.exec(s2);
+          if (q) inner.push([lines[i][0] + q[0].length, lines[i][1]]);
+          else if (inner.length && !mstarts(s2)) inner.push(lines[i]);
+          else break;
+          i++;
+        }
+        out += `<blockquote>${mdBlocks(inner, false)}</blockquote>`; continue;
+      }
+      if (MD_LIST.test(s)) { const r = mdList(lines, i); out += r.html; i = r.next; continue; }
+      if (s.includes('|') && i + 1 < lines.length) { const r = mdTable(lines, i); if (r) { out += r.html; i = r.next; continue; } }
+      const para = [l]; i++; let head = 0;
+      while (i < lines.length && !mblank(lines[i])) {
+        const s2 = mls(lines[i]);
+        if (MD_SETEXT.test(s2)) { head = s2.trim()[0] === '=' ? 1 : 2; i++; break; }
+        if (mstarts(s2)) break;
+        para.push(lines[i]); i++;
+      }
+      const body = mdInline(para.map(mtrim));
+      out += head ? `<h${head}>${body}</h${head}>` : tight ? body + '\n' : `<p>${body}</p>`;
+    }
+    return out;
+  }
+  function mdCode(lines, info) {
+    return `<pre${info ? ` data-lang="${esc(info.slice(0, 30))}"` : ''}><code>${lines.map((l) => spanHtml(l[0], l[1], MDX)).join('\n')}</code></pre>`;
+  }
+  function mdAtx(l) {
+    const t = S.text, m = /^( {0,3})(#{1,6})[ \t]*/.exec(mls(l));
+    let a = l[0] + m[0].length, b = l[1];
+    while (b > a && /[ \t]/.test(t[b - 1])) b--;
+    let j = b; while (j > a && t[j - 1] === '#') j--;
+    if (j < b && (j === a || /[ \t]/.test(t[j - 1]))) { b = j; while (b > a && /[ \t]/.test(t[b - 1])) b--; }
+    const n = m[2].length;
+    return `<h${n}>${mdInline([[a, b]])}</h${n}>`;
+  }
+  function mdList(lines, i) {
+    const first = MD_LIST.exec(mls(lines[i]));
+    const ordered = /\d/.test(first[2]), mark = first[2].slice(-1), start = ordered ? parseInt(first[2], 10) : 1;
+    const items = []; let loose = false;
+    while (i < lines.length) {
+      const s = mls(lines[i]), m = MD_LIST.exec(s);
+      if (!m || /\d/.test(m[2]) !== ordered || m[2].slice(-1) !== mark || (!ordered && MD_HR.test(s))) break;
+      const pad = m[3].replace(/\t/g, '    ').length, mw = m[1].length + m[2].length;
+      const col = mw + (pad >= 1 && pad <= 4 ? pad : 1);
+      const item = [[lines[i][0] + m[0].length - (pad > 4 ? m[3].length - 1 : 0), lines[i][1]]];
+      i++;
+      let ended = false;
+      while (i < lines.length) {
+        const l = lines[i];
+        if (mblank(l)) {
+          let j = i; while (j < lines.length && mblank(lines[j])) j++;
+          if (j < lines.length && mindent(lines[j]) >= col) { for (; i < j; i++) item.push([lines[i][0], lines[i][0]]); loose = true; continue; }
+          i = j;
+          if (j < lines.length && MD_LIST.test(mls(lines[j]))) loose = true; else ended = true;
+          break;
+        }
+        if (mindent(l) >= col) { item.push(mstrip(l, col)); i++; continue; }
+        const s2 = mls(l);
+        if (MD_LIST.test(s2) || mstarts(s2)) break;
+        item.push(l); i++; // lazy continuation
+      }
+      items.push(item);
+      if (ended) break;
+    }
+    const tag = ordered ? 'ol' : 'ul';
+    let html = `<${tag}${ordered && start !== 1 ? ` start="${start}"` : ''}>`;
+    for (let it of items) {
+      const tm = /^\[([ xX])\](?:[ \t]+|$)/.exec(mls(it[0]));
+      let check = '';
+      if (tm) { check = `<input type="checkbox" disabled${tm[1] !== ' ' ? ' checked' : ''}>`; it = [[it[0][0] + tm[0].length, it[0][1]], ...it.slice(1)]; }
+      html += `<li${tm ? ' class="task"' : ''}>${check}${mdBlocks(it, !loose)}</li>`;
+    }
+    return { html: html + `</${tag}>`, next: i };
+  }
+  function mdCells(l) {
+    const t = S.text; let [a, b] = mtrim(l);
+    if (t[a] === '|') a++;
+    if (b > a && t[b - 1] === '|' && t[b - 2] !== '\\') b--;
+    const out = []; let c = a, code = false;
+    for (let j = a; j < b; j++) {
+      const ch = t[j];
+      if (ch === '\\') { j++; continue; }
+      if (ch === '`') code = !code;
+      else if (ch === '|' && !code) { out.push(mtrim([c, j])); c = j + 1; }
+    }
+    out.push(mtrim([c, b]));
+    return out;
+  }
+  function mdTable(lines, i) {
+    const dl = lines[i + 1], ds = mls(dl);
+    if (!/^[ \t]*\|?[ \t]*:?-+:?[ \t]*(?:\|[ \t]*:?-+:?[ \t]*)*\|?[ \t]*$/.test(ds)) return null;
+    const head = mdCells(lines[i]), delim = mdCells(dl).map((r) => S.text.slice(r[0], r[1]));
+    if (delim.length !== head.length) return null;
+    const al = delim.map((d) => (d[0] === ':' && d.endsWith(':') ? 'center' : d.endsWith(':') ? 'right' : d[0] === ':' ? 'left' : ''));
+    const cell = (tag, r, j) => `<${tag}${al[j] ? ` style="text-align:${al[j]}"` : ''}>${r ? mdInline([r]) : ''}</${tag}>`;
+    let html = '<div class="md-table"><table><thead><tr>' + head.map((r, j) => cell('th', r, j)).join('') + '</tr></thead><tbody>';
+    i += 2;
+    while (i < lines.length && !mblank(lines[i]) && !mstarts(mls(lines[i]))) {
+      const row = mdCells(lines[i]);
+      html += '<tr>' + head.map((_, j) => cell('td', row[j], j)).join('') + '</tr>'; i++;
+    }
+    return { html: html + '</tbody></table></div>', next: i };
+  }
+
+  // Inline markdown over one or more source ranges (the lines of a paragraph)
+  function mdInline(ranges) {
+    const t = S.text, parts = ranges.map((r) => t.slice(r[0], r[1])), L = parts.join('\n');
+    const lo = []; let acc = 0;
+    for (const p of parts) { lo.push(acc); acc += p.length + 1; }
+    const lineAt = (x) => { let a = 0, b = lo.length - 1; while (a < b) { const m = (a + b + 1) >> 1; if (lo[m] <= x) a = m; else b = m - 1; } return a; };
+    // Source text for local [a, b): newlines become soft breaks, or <br> after two spaces; in code, spaces
+    function emit(a, b, code) {
+      if (b <= a) return '';
+      let out = '';
+      for (let li = lineAt(a); li < parts.length && lo[li] < b; li++) {
+        const pa = Math.max(a, lo[li]), pb = Math.min(b, lo[li] + parts[li].length);
+        if (pb > pa) out += spanHtml(ranges[li][0] + (pa - lo[li]), ranges[li][0] + (pb - lo[li]), MDX);
+        const nl = lo[li] + parts[li].length;
+        if (nl >= a && nl < b) out += code ? ' ' : / {2,}$/.test(parts[li]) ? '<br>' : '\n';
+      }
+      return out;
+    }
+    if (L.length > 200000) return emit(0, L.length);
+    function codeEnd(i, b) { // i at a backtick run: index after the matching closing run, or -1
+      let n = 0; while (i + n < b && L[i + n] === '`') n++;
+      for (let j = i + n; j < b;) {
+        if (L[j] !== '`') { j++; continue; }
+        let m = 0; while (j + m < b && L[j + m] === '`') m++;
+        if (m === n) return j + m;
+        j += m;
+      }
+      return -1;
+    }
+    function link(i, b) { // i at '['
+      let j = i + 1, depth = 1;
+      const lim = Math.min(b, i + 3000);
+      while (j < lim) { const c = L[j]; if (c === '\\') { j += 2; continue; } if (c === '[') depth++; else if (c === ']' && !--depth) break; j++; }
+      if (depth || L[j + 1] !== '(') return null;
+      let k = j + 2; while (k < b && /[ \t\n]/.test(L[k])) k++;
+      let ua = k, ub;
+      if (L[k] === '<') { ua = k + 1; while (k < b && L[k] !== '>' && L[k] !== '\n') k++; if (L[k] !== '>') return null; ub = k; k++; }
+      else { let p = 0; while (k < Math.min(b, ua + 3000) && !/[ \t\n]/.test(L[k])) { if (L[k] === '\\') { k += 2; continue; } if (L[k] === '(') p++; else if (L[k] === ')') { if (!p) break; p--; } k++; } ub = k; }
+      while (k < b && /[ \t\n]/.test(L[k])) k++;
+      if (L[k] === '"' || L[k] === "'" || L[k] === '(') {
+        const close = L[k] === '(' ? ')' : L[k]; k++;
+        while (k < b && L[k] !== close) { if (L[k] === '\\') k++; k++; }
+        k++; while (k < b && /[ \t\n]/.test(L[k])) k++;
+      }
+      if (L[k] !== ')') return null;
+      return { ta: i + 1, tb: j, ua, ub, end: k + 1 };
+    }
+    function emph(i, b) {
+      const c = L[i]; let n = 0; while (i + n < b && L[i + n] === c) n++;
+      const after = L[i + n], before = i > 0 ? L[i - 1] : ' ';
+      if (i + n >= b || /\s/.test(after)) return null;
+      if (c === '_' && /[A-Za-z0-9]/.test(before)) return null;
+      if (c === '~' && n > 2) return null;
+      const lim = Math.min(b, i + n + 3000);
+      for (let pass = 0; pass < 2; pass++) {
+        for (let j = i + n + 1; j < lim; j++) {
+          const ch = L[j];
+          if (ch === '\\') { j++; continue; }
+          if (ch === '`') { const e = codeEnd(j, b); if (e > 0) j = e - 1; continue; }
+          if (ch !== c) continue;
+          let m = 0; while (j + m < b && L[j + m] === c) m++;
+          const skip = () => { j += m - 1; };
+          if (/\s/.test(L[j - 1]) || (c === '_' && j + m < b && /[A-Za-z0-9]/.test(L[j + m])) || (pass === 0 && m !== n)) { skip(); continue; }
+          if (c === '~') { if (m !== n) { skip(); continue; } return { html: `<del>${inl(i + n, j)}</del>`, end: j + m }; }
+          const use = n >= 3 && m >= 3 ? 3 : n >= 2 && m >= 2 ? 2 : 1;
+          const inner = inl(i + n, j);
+          const w = use === 3 ? `<strong><em>${inner}</em></strong>` : use === 2 ? `<strong>${inner}</strong>` : `<em>${inner}</em>`;
+          return { html: emit(i, i + n - use) + w, end: j + use };
+        }
+      }
+      return null;
+    }
+    function inl(a, b) {
+      let out = '', i = a, ts = a;
+      const flush = (to) => { if (to > ts) out += emit(ts, to); };
+      while (i < b) {
+        const c = L[i];
+        if (c === '\\' && i + 1 < b) {
+          if (L[i + 1] === '\n') { flush(i); out += '<br>'; i += 2; ts = i; continue; }
+          if (MD_PUNCT.test(L[i + 1])) { flush(i); out += emit(i + 1, i + 2); i += 2; ts = i; continue; }
+        }
+        if (c === '`') {
+          const e = codeEnd(i, b);
+          let n = 0; while (i + n < b && L[i + n] === '`') n++;
+          if (e < 0) { i += n; continue; }
+          flush(i);
+          let ca = i + n, cb = e - n;
+          if (cb - ca >= 2 && L[ca] === ' ' && L[cb - 1] === ' ' && L.slice(ca, cb).trim()) { ca++; cb--; }
+          out += `<code>${emit(ca, cb, true)}</code>`; i = e; ts = i; continue;
+        }
+        if (c === '[' || (c === '!' && L[i + 1] === '[')) {
+          const img = c === '!', lk = link(img ? i + 1 : i, b);
+          if (lk) {
+            flush(i);
+            const href = lk.ub > lk.ua ? `<span class="md-href" title="${img ? 'Images are not loaded' : 'Links are not clickable'}">${emit(lk.ua, lk.ub)}</span>` : '';
+            out += img ? `<span class="md-img" title="Image (not loaded)"><span class="md-img-ic" aria-hidden="true">▨</span>${inl(lk.ta, lk.tb)}</span>${href}`
+              : `<span class="md-link">${inl(lk.ta, lk.tb)}</span>${href}`;
+            i = lk.end; ts = i; continue;
+          }
+        }
+        if (c === '<') {
+          const m = /^<((?:https?|hxxps?|ftp):\/\/[^\s<>]+|[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)>/i.exec(L.slice(i, Math.min(b, i + 2000)));
+          if (m) { flush(i); out += `<span class="md-link">${emit(i + 1, i + 1 + m[1].length)}</span>`; i += m[0].length; ts = i; continue; }
+        }
+        if (c === '*' || c === '_' || c === '~') {
+          const r = emph(i, b);
+          if (r) { flush(i); out += r.html; i = r.end; ts = i; continue; }
+          while (i < b && L[i] === c) i++;
+          continue;
+        }
+        i++;
+      }
+      flush(b);
+      return out;
+    }
+    return inl(0, L.length);
+  }
+  function mdHtml(forExport) {
+    const n = lineCount(), lines = new Array(n);
+    for (let i = 0; i < n; i++) lines[i] = [S.starts[i], lineEnd(i)];
+    MDX = !!forExport;
+    try { return mdBlocks(lines, false); } finally { MDX = false; }
+  }
+  let mdWarned = -1;
+  function renderMd() {
+    const el = $('md'), top = view.scrollTop;
+    if (S.text.length > 2e6 && mdWarned !== S.textVer) { mdWarned = S.textVer; toast('This is a lot of text to render as markdown, so editing rules may feel slow. Turn off Render markdown for big logs.'); }
+    el.innerHTML = S.text ? mdHtml(false) : '';
+    view.scrollTop = top;
+  }
+  function setMd(on, quiet) {
+    S.md = !!on;
+    $('optMd').checked = S.md;
+    view.classList.toggle('md', S.md);
+    linesEl.hidden = S.md; $('md').hidden = !S.md;
+    for (const id of ['optWrap', 'optOnly']) { $(id).disabled = S.md; $(id).closest('label').classList.toggle('off', S.md); }
+    hideTip(true);
+    if (S.md && observer) observer.disconnect();
+    S.blocks = []; linesEl.replaceChildren();
+    computeViewLines(); rebuildView(null); renderStatus();
+    if (!quiet) saveView();
+  }
+
   // ---------- Hit navigation ----------
   function firstAfter(ids, off) { // first index in ids (sorted by s) with s > off
     const H = S.hits; let lo = 0, hi = ids.length;
@@ -723,8 +1118,17 @@ onmessage = (e) => {
     const hit = S.hits[h]; if (!hit) return;
     S.curOff = hit.s; S.curHit = h;
     const k = segAt(hit.s);
-    const prev = linesEl.querySelector('.h.cur'); if (prev) prev.classList.remove('cur');
+    const prev = view.querySelector('.h.cur'); if (prev) prev.classList.remove('cur');
     S.curSeg = k;
+    if (S.md) {
+      const span = $('md').querySelector(`.h[data-k="${k}"]`);
+      if (!span) { toast('That hit is inside markdown syntax that isn\'t shown. Turn off Render markdown to see it.'); hideTip(true); renderHitPos(); return; }
+      span.classList.add('cur');
+      span.scrollIntoView({ block: 'center', inline: 'nearest' });
+      span.classList.remove('flash'); void span.offsetWidth; span.classList.add('flash');
+      requestAnimationFrame(() => showTip(k, span, true, h));
+      renderHitPos(); return;
+    }
     const L = lineOf(hit.s);
     if (posOfLine(L) < 0) return;
     const le = lineEl(L); if (!le) return;
@@ -843,7 +1247,7 @@ onmessage = (e) => {
     if (sel && !sel.isCollapsed) return;
     if (sp) {
       const k = +sp.dataset.k, h = S.segH[k][0];
-      const prev = linesEl.querySelector('.h.cur'); if (prev) prev.classList.remove('cur');
+      const prev = view.querySelector('.h.cur'); if (prev) prev.classList.remove('cur');
       sp.classList.add('cur'); S.curSeg = k; S.curHit = h; S.curOff = S.hits[h].s;
       showTip(k, sp, true); renderHitPos();
     } else if (S.pinned) hideTip(true);
@@ -1257,7 +1661,11 @@ onmessage = (e) => {
       history.replaceState(null, '', location.pathname + location.hash);
       return;
     }
-    if (q.get('sample')) { replaceText(SAMPLE, 'Loaded the sample log'); return; }
+    if (q.get('sample')) {
+      const md = q.get('sample') === 'md';
+      if (md !== !!S.md) setMd(md, true);
+      replaceText(md ? SAMPLE_MD : SAMPLE, md ? 'Loaded the sample markdown' : 'Loaded the sample log'); return;
+    }
     const srcs = q.getAll('src').slice(0, 10);
     if (!srcs.length) return;
     const parts = [];
@@ -1272,6 +1680,7 @@ onmessage = (e) => {
       } catch (e) { toast(`Could not load ${u.pathname.split('/').pop() || u.href}: ${e.message}`); }
     }
     if (!parts.length) return;
+    if (parts.length === 1 && /\.(md|markdown|mdown|mkd)$/i.test(parts[0][0]) && !S.md) setMd(true, true);
     replaceText(parts.length === 1 ? parts[0][1] : parts.map(([n, t]) => `==> ${n} <==\n${t}`).join('\n'),
       parts.length === 1 ? `Loaded ${parts[0][0]}` : `Loaded ${parts.length} files`);
   }
@@ -1279,14 +1688,19 @@ onmessage = (e) => {
     if (!S.text) { toast('No text to export'); return; }
     const only = S.viewLines;
     let body = '';
-    const n = only ? only.length : lineCount();
-    for (let p = 0; p < n; p++) body += lineHtml(only ? only[p] : p, true);
+    if (S.md) body = `<main class="md">${mdHtml(true)}</main>`;
+    else { const n = only ? only.length : lineCount(); for (let p = 0; p < n; p++) body += lineHtml(only ? only[p] : p, true); }
     const legend = S.rules.filter((r) => r.on && r.count).map((r) => `<span class="lg"><span class="h r-${r.id}">${esc(r.name)}</span> ${fmtN(r.count)}</span>`).join('');
     const doc = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Prism export</title><style>
 body{margin:0;background:#0e131b;color:#e6ebf2;font:12.5px/18px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 header{position:sticky;top:0;z-index:2;background:#141a24;border-bottom:1px solid #2a3546;padding:8px 12px;font-family:system-ui,sans-serif;font-size:13px;display:flex;gap:14px;flex-wrap:wrap}
 .lg{white-space:nowrap}.ln{display:flex}.no{flex:none;min-width:${String(lineCount()).length + 1}ch;padding-right:10px;text-align:right;color:#8b97a8;border-right:1px solid #2a3546;user-select:none}
 .tx{white-space:pre-wrap;word-break:break-all;padding:0 10px}.h{border-radius:2px}.h.multi{text-decoration:overline dotted}
+.md{font:15px/1.6 system-ui,sans-serif;max-width:900px;padding:20px 32px 60px;overflow-wrap:anywhere}.md h1,.md h2{border-bottom:1px solid #2a3546;padding-bottom:.2em}
+.md code{font:.86em ui-monospace,Menlo,Consolas,monospace;background:#212b3b;border-radius:4px;padding:.05em .35em}.md pre{background:#1a2230;border:1px solid #2a3546;border-radius:8px;padding:10px 14px;overflow:auto}
+.md pre code{background:none;padding:0;white-space:pre}.md blockquote{border-left:3px solid #364357;margin-left:0;padding-left:1em;color:#8b97a8}.md table{border-collapse:collapse}
+.md th,.md td{border:1px solid #2a3546;padding:5px 10px}.md .md-link,.md .md-img{color:#7aa7ff;text-decoration:underline dotted}.md .md-href{font:11.5px ui-monospace,Menlo,monospace;color:#8b97a8;margin-left:5px}
+.md .md-href::before{content:"→ "}.md li.task{list-style:none;margin-left:-1.4em}.md hr{border:0;border-top:1px solid #364357}
 ${$('ruleStyles').textContent}
 </style></head><body><header><b>Prism</b><span>${fmtN(S.hits.length)} hits · exported ${new Date().toISOString()}</span>${legend}</header>${body}</body></html>`;
     download(doc, 'prism-highlighted.html', 'text/html');
@@ -1298,6 +1712,7 @@ ${$('ruleStyles').textContent}
     try {
       const texts = await Promise.all(files.map((f) => f.text()));
       const t = files.length === 1 ? texts[0] : texts.map((x, i) => `==> ${files[i].name} <==\n${x}`).join('\n');
+      if (files.length === 1 && /\.(md|markdown|mdown|mkd)$/i.test(files[0].name) && !S.md) setMd(true);
       replaceText(t, files.length === 1 ? `Loaded ${files[0].name}` : `Loaded ${files.length} files`);
     } catch (e) { toast('Could not read that file'); }
   }
@@ -1345,7 +1760,8 @@ ${$('ruleStyles').textContent}
     closeMenus();
     if (act === 'open') $('fileIn').click();
     else if (act === 'edit') startEdit();
-    else if (act === 'sample') replaceText(SAMPLE, 'Loaded the sample log');
+    else if (act === 'sample') { if (S.md) setMd(false); replaceText(SAMPLE, 'Loaded the sample log'); }
+    else if (act === 'sample-md') { replaceText(SAMPLE_MD, 'Loaded the sample markdown'); if (!S.md) setMd(true); }
     else if (act === 'clear') { if (!S.text) return; const prev = S.text; setText(''); toast('Cleared the text', { label: 'Undo', fn: () => setText(prev) }); }
     else if (act === 'csv') exportCsv();
     else if (act === 'html') exportHtml();
@@ -1392,7 +1808,7 @@ ${$('ruleStyles').textContent}
   }
 
   // ---------- Options, keys, layout ----------
-  function saveView() { store.set('prism.view', { wrap: $('optWrap').checked, only: $('optOnly').checked, ctx: $('optCtx').value, side: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--side')) || 360, left: $('layout').classList.contains('left') }); }
+  function saveView() { store.set('prism.view', { wrap: $('optWrap').checked, only: $('optOnly').checked, md: !!S.md, ctx: $('optCtx').value, side: parseInt(getComputedStyle(document.documentElement).getPropertyValue('--side')) || 360, left: $('layout').classList.contains('left') }); }
   function setSide(left) {
     $('layout').classList.toggle('left', left);
     $('sideIcon').setAttribute('x', left ? '2.5' : '9.5');
@@ -1402,6 +1818,7 @@ ${$('ruleStyles').textContent}
     setSide(!$('layout').classList.contains('left')); saveView();
     if (view.classList.contains('wrap')) rebuildView(top);
   });
+  $('optMd').addEventListener('change', (e) => setMd(e.target.checked));
   $('optWrap').addEventListener('change', (e) => { const top = topLine(); view.classList.toggle('wrap', e.target.checked); rebuildView(top); saveView(); });
   $('optOnly').addEventListener('change', () => { const top = topLine(); computeViewLines(); hideTip(true); rebuildView(top); renderStatus(); saveView(); });
   $('optCtx').addEventListener('change', () => { saveView(); if (S.pinned && S.tipAnchor && S.tipAnchor.isConnected) showTip(+S.tipAnchor.dataset.k, S.tipAnchor, true, S.curHit >= 0 ? S.curHit : undefined); });
@@ -1444,6 +1861,11 @@ ${$('ruleStyles').textContent}
   });
 
   // ---------- Start ----------
+  (() => { // Download this very page, so a saved prism.html can be re-downloaded too
+    const a = $('downloadApp');
+    if (window.claude && window.claude.use) { a.hidden = true; return; }
+    a.href = location.href.split('#')[0].split('?')[0];
+  })();
   function init() {
     const theme = store.get('prism.theme', null) || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
     document.documentElement.dataset.theme = theme;
@@ -1451,6 +1873,7 @@ ${$('ruleStyles').textContent}
     const v = store.get('prism.view', {});
     $('optWrap').checked = !!v.wrap; view.classList.toggle('wrap', !!v.wrap);
     $('optOnly').checked = !!v.only;
+    if (v.md) setMd(true, true);
     if (v.ctx && $('optCtx').querySelector(`option[value="${v.ctx}"]`)) $('optCtx').value = v.ctx; else $('optCtx').value = 'c100';
     setSide(v.left !== false);
     if (v.side) document.documentElement.style.setProperty('--side', Math.max(260, v.side) + 'px');
